@@ -73,6 +73,8 @@ def event(line: bytes) -> tuple[str, str | None]:
         if record.get('type') != 'event_msg':
             return '', None
         kind = payload.get('type', '')
+        if kind == 'error' and payload.get('will_retry') is True:
+            return '', None
         error = payload.get('error') or {}
         info = error.get('codex_error_info') if isinstance(error, dict) else None
         overloaded = info == 'server_overloaded' or isinstance(info, dict) and 'server_overloaded' in info

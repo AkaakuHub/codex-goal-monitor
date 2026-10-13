@@ -50,6 +50,7 @@ class Handler(BaseHTTPRequestHandler):
         response = {'id': 'response-test', 'object': 'response', 'status': 'in_progress', 'output': []}
         self.emit('response.created', {'type': 'response.created', 'response': response})
         if self.server.mode == 'stream':
+            time.sleep(2)
             self.close_connection = True
             return
         time.sleep(4)

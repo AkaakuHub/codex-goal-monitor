@@ -17,7 +17,7 @@ async def recover(target: Target, screen: str, notify: Callable[[Target, str, st
         return
     if recovery.error and recovery.phase == 'watching' and (now - recovery.error_time > 1800 or goal.status == 'active' and now - recovery.error_time > 60):
         recovery.cancel()
-        notify(target, 'Codex Goal Recovery Failed', 'Reason: Capacityエラーと現在のstalled状態の関連を確認できないため自動入力を見送りました。')
+        notify(target, 'Codex Goal Recovery Failed', 'Reason: 通信エラーと現在のstalled状態の関連を確認できないため自動入力を見送りました。')
         return
     if goal.status in ('paused', 'usage_limited', 'budget_limited', 'complete'):
         recovery.cancel()
