@@ -1,0 +1,30 @@
+{
+  "passed": [
+    "隔離した実Codexを検出",
+    "初回Capacityターン終了",
+    "GoalのCapacityエラーを通知",
+    "Capacityが5回を超えても自動再開を継続",
+    "連続Capacityの解消後に実ターンが正常終了"
+  ],
+  "notifications": [
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Recovery Failed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nReason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。",
+    "Codex Capacity Error\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: blocked\nAction: Resume scheduled",
+    "Codex Goal Resume Started\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: active\nAction: /goal resume\nResult: Goal active; awaiting first completed turn",
+    "Codex Goal Resumed\nServer: vcn-tokyo-main\ntmux: stream-test:0.0 (%0; socket=tmux.sock)\nThread: 01a1343c-8c64-7db0-ae34-9e5c7626e5fe\nGoal: active\nAction: /goal resume\nResult: Success (first resumed turn completed)"
+  ],
+  "unit_tests_passed": 19,
+  "production_old_limit_halt_cleared": true
+}
