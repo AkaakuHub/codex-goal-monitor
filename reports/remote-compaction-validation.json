@@ -1,0 +1,29 @@
+{
+  "unit_tests_passed": 20,
+  "stream_regression": [
+    "隔離した実Codexを検出",
+    "初回Capacityターン終了",
+    "GoalのCapacityエラーを通知",
+    "再開開始を成功とは分けて通知",
+    "再開後の実ストリーム切断を失敗として通知",
+    "失敗ターンに成功通知を出さない",
+    "通信エラー後もblockedのGoalを再試行し正常終了を確認"
+  ],
+  "isolated_compaction": {
+    "passed": [
+      "隔離したCodexの最初のターンが終了",
+      "実際のremote compact通信エラーを再現",
+      "隔離したCLIが終了",
+      "同じthreadを再起動",
+      "通常モデルの要約経路でcompactedを確認"
+    ],
+    "thread_unchanged": true
+  },
+  "production": {
+    "thread": "01a132dd-56bc-78d3-84da-06fe6c1a1626",
+    "command_typed_jst": "2026-10-13 19:06:49",
+    "enter_sent_jst": "2026-10-13 19:06:50",
+    "remote_compaction_succeeded_jst": "2026-10-13 19:13:08",
+    "live_cli_restarted": false
+  }
+}

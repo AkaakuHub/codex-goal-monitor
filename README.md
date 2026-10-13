@@ -83,6 +83,7 @@ Capacityエラーと同じGoalであること、SQLiteの`blocked`、TUIの`Goal
 python3 -m unittest discover -s tests -v
 python3 tests/integration.py --directory <テスト用ディレクトリの絶対パス>
 python3 tests/stream_recovery.py --directory <テスト用ディレクトリの絶対パス>
+python3 tests/local_compaction.py --directory <テスト用ディレクトリの絶対パス>
 python3 tests/shared_server.py --directory <テスト用ディレクトリの絶対パス>
 ```
 
