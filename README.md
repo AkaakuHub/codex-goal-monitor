@@ -1,6 +1,6 @@
 # Codex Goal Monitor
 
-同じUnixユーザーのtmuxで動くCodex CLIを自動発見し、Capacityエラーまたはストリーム切断でblockedになったGoalを`/goal resume`で再開します。復旧状況・使用量制限・Goal完了をDiscordへ通知します。
+同じUnixユーザーのtmuxで動くCodex CLIを自動発見し、Capacityエラーまたはストリーム切断（remote compactの通信エラーを含みます）でblockedになったGoalを`/goal resume`で再開します。復旧状況・使用量制限・Goal完了をDiscordへ通知します。
 
 ## 動作環境
 

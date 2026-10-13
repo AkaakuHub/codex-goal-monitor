@@ -123,6 +123,18 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn"}}'), ('failed', 'turn'))
         self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"error","will_retry":true,"message":"stream disconnected before completion: retrying"}}'), ('', None))
 
+    def test_remote_compact_failure_reaches_the_recovery_queue(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'session.jsonl'
+            message = 'Error running remote compact task: stream disconnected before completion: An error occurred while processing your request.'
+            record = {'timestamp': datetime.now(UTC).isoformat(), 'type': 'event_msg', 'payload': {'type': 'task_complete', 'turn_id': 'compact-turn', 'error': {'message': message, 'codex_error_info': 'other'}}}
+            path.write_text(json.dumps(record) + '\n')
+            target = Target(Mock(), Mock(), -1, thread='thread', rollout=path)
+            with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'blocked', 0, 0, int((time.time() - 10) * 1000))):
+                target.replay()
+            self.assertEqual(target.failures, [('stream', 'turn:compact-turn')])
+            self.assertFalse(target.recovery.busy)
+
     def test_replay_preserves_failure_even_if_a_new_turn_starts(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'session.jsonl'
