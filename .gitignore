@@ -1,0 +1,10 @@
+__pycache__/
+build/
+.venv/
+.ruff_cache/
+.env
+.env.*
+!.env.example
+*.env
+reports/service-status.json
+reports/resource-sample.json
