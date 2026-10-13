@@ -24,6 +24,13 @@
     "command_typed_jst": "2026-10-13 19:06:49",
     "enter_sent_jst": "2026-10-13 19:06:50",
     "remote_compaction_succeeded_jst": "2026-10-13 19:13:08",
-    "live_cli_restarted": false
+    "live_cli_restarted": false,
+    "post_compaction_response_items": {
+      "message": 3,
+      "custom_tool_call": 11,
+      "custom_tool_call_output": 11,
+      "reasoning": 2
+    },
+    "last_verified_goal_status": "active"
   }
 }
