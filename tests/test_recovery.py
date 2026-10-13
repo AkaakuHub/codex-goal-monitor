@@ -79,6 +79,38 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(recovery.phase, 'watching')
         self.assertGreater(recovery.due, time.time() + 50)
 
+    async def test_token_wasting_loop_stops_before_sending_input(self):
+        target = Mock()
+        target.recovery = Recovery(error='error', goal_id='goal', due=time.time() - 1, error_time=time.time(), wasted_turns=5)
+        target.pane.mode = False
+        target.pane.cursor_x = 2
+        target.pane.cursor_y = 0
+        notify = Mock()
+        with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'blocked', 0, 0, 0)), patch('monitor.recovery.tmux.command', new=AsyncMock()) as command:
+            await recover(target, '›\nGoal stalled (/goal resume)', notify, Mock())
+        self.assertTrue(target.recovery.halted)
+        command.assert_not_called()
+        self.assertEqual(notify.call_args.args[1], 'Codex Goal Recovery Failed')
+
+    def test_repeated_tool_output_is_not_new_work(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'session.jsonl'
+            target = Target(Mock(), Mock(), -1, thread='thread', rollout=path)
+            def record(output, call):
+                return json.dumps({'type': 'response_item', 'payload': {'type': 'custom_tool_call_output', 'call_id': call, 'output': output}}) + '\n'
+            path.write_text(record('unchanged output', 'first'))
+            with patch('monitor.adapter.read_goal', return_value=None):
+                target.replay(initial=True)
+                self.assertFalse(target.turn_work)
+                with path.open('a') as file:
+                    file.write(record('unchanged output', 'different-id'))
+                target.replay()
+                self.assertFalse(target.turn_work)
+                with path.open('a') as file:
+                    file.write(record('changed output', 'new'))
+                target.replay()
+                self.assertTrue(target.turn_work)
+
     def test_failed_and_aborted_turns_are_not_successful(self):
         stream = {'type': 'event_msg', 'payload': {'type': 'task_complete', 'turn_id': 'turn', 'error': {'codex_error_info': 'other', 'message': 'stream disconnected before completion: An error occurred while processing your request.'}}}
         self.assertEqual(event(json.dumps(stream).encode()), ('stream', 'turn'))
