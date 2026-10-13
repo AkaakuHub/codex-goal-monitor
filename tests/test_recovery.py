@@ -114,6 +114,10 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
     def test_failed_and_aborted_turns_are_not_successful(self):
         stream = {'type': 'event_msg', 'payload': {'type': 'task_complete', 'turn_id': 'turn', 'error': {'codex_error_info': 'other', 'message': 'stream disconnected before completion: An error occurred while processing your request.'}}}
         self.assertEqual(event(json.dumps(stream).encode()), ('stream', 'turn'))
+        stream['payload']['error']['message'] = 'Error running remote compact task: stream disconnected before completion: An error occurred while processing your request.'
+        self.assertEqual(event(json.dumps(stream).encode()), ('stream', 'turn'))
+        stream['payload']['error']['message'] = 'Error running remote compact task: Permission denied'
+        self.assertEqual(event(json.dumps(stream).encode()), ('failed', 'turn'))
         stream['payload']['error']['message'] = 'Permission denied'
         self.assertEqual(event(json.dumps(stream).encode()), ('failed', 'turn'))
         self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn"}}'), ('failed', 'turn'))

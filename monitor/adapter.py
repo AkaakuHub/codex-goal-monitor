@@ -83,7 +83,7 @@ def event(line: bytes) -> tuple[str, str | None]:
         message = error.get('message', '') if isinstance(error, dict) else ''
         if error or kind == 'error':
             message = message or payload.get('message', '')
-            return ('stream' if isinstance(message, str) and message.startswith('stream disconnected before completion:') else 'failed'), payload.get('turn_id')
+            return ('stream' if isinstance(message, str) and message.startswith(('stream disconnected before completion:', 'Error running remote compact task: stream disconnected before completion:')) else 'failed'), payload.get('turn_id')
         if kind == 'turn_aborted':
             return 'failed', payload.get('turn_id')
         if kind in ('task_started', 'turn_started'):
