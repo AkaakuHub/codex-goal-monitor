@@ -29,6 +29,8 @@ class Target:
     proof_title: str = ''
     proof_at: float = 0
     failures: list[tuple[str, str]] = field(default_factory=list)
+    work_seen: set[str] = field(default_factory=set)
+    turn_work: bool = False
 
     def bind(self, thread: str, rollout: Path, recovery: Recovery) -> None:
         if thread == self.thread and rollout == self.rollout:
@@ -58,10 +60,19 @@ class Target:
                     lines = (self.partial + chunk).split(b'\n')
                     self.partial = lines.pop()
                     for line in lines:
+                        record = json.loads(line)
+                        payload = record.get('payload', {})
+                        if record.get('type') == 'response_item' and payload.get('type') in ('function_call_output', 'custom_tool_call_output'):
+                            output = payload.get('output')
+                            digest = hashlib.sha256(json.dumps(output, sort_keys=True).encode()).hexdigest()
+                            if digest not in self.work_seen:
+                                self.turn_work = not initial or self.turn_work
+                                self.work_seen.add(digest)
                         kind, turn = adapter.event(line)
                         if turn:
                             self.turn_id = turn
                         if kind == 'started':
+                            self.turn_work = False
                             if initial:
                                 self.failures.clear()
                             errors.clear()
@@ -93,7 +104,7 @@ class Target:
                                 else:
                                     self.failures.append((kind, identity))
                                 self.recovery.progressed = False
-        except OSError:
+        except (OSError, ValueError, AttributeError):
             pass
         return errors
 

@@ -21,6 +21,8 @@ class Recovery:
     busy: bool = False
     resumes: int = 0
     progressed: bool = False
+    token_baseline: int = 0
+    wasted_turns: int = 0
 
     def capacity(self, identity: str, now: float, delays: list[float]) -> bool:
         if identity in self.seen or self.halted:
@@ -31,6 +33,13 @@ class Recovery:
         self.due = now + delays[min(self.attempt, len(delays) - 1)]
         self.attempt += 1
         return True
+
+    def failed_turn(self, tokens: int, new_work: bool) -> None:
+        if new_work:
+            self.wasted_turns = 0
+        elif self.resumes and tokens > self.token_baseline:
+            self.wasted_turns += 1
+        self.token_baseline = tokens
 
     def eligible(self, status: str, goal_id: str, now: float) -> bool:
         return status == 'blocked' and self.error is not None and not self.halted and self.phase == 'watching' and now >= self.due and now - self.error_time <= 1800 and (not self.goal_id or self.goal_id == goal_id)
@@ -44,3 +53,5 @@ class Recovery:
         self.cancel()
         self.attempt = 0
         self.failures = 0
+        self.resumes = 0
+        self.wasted_turns = 0

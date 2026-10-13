@@ -173,7 +173,7 @@ try:
     target.recovery.deadline = time.time() + 20
     if not adapter.resume_selected(screen(pane)):
         raise AssertionError('Resume goalが選択されていることを確認')
-    asyncio.run(recover(target, screen(pane), lambda *arguments: None, State(root / 'menu-state'), 3))
+    asyncio.run(recover(target, screen(pane), lambda *arguments: None, State(root / 'menu-state')))
     os.close(target.pidfd)
     wait('確認画面のResume goalを選択してactiveを確認', lambda: goal_status(thread) == 'active')
     tmux('send-keys', '-t', pane, '-l', '/goal pause')

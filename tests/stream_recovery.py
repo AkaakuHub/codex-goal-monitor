@@ -13,7 +13,9 @@ from local_provider import Provider
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--directory', type=Path, required=True)
-    root = parser.parse_args().directory.resolve()
+    parser.add_argument('--capacity-retries', type=int, default=0)
+    args = parser.parse_args()
+    root = args.directory.resolve()
     root.mkdir(parents=True, exist_ok=True)
     project = Path(__file__).resolve().parents[1]
     home = root / 'home'
@@ -39,7 +41,7 @@ requires_openai_auth = false
 [projects.{json.dumps(str(root))}]
 trust_level = "trusted"
 ''')
-    values = {'runtime': str(root / 'runtime'), 'state': str(root / 'state'), 'helper': str(Path.home() / '.local/lib/codex-goal-monitor/events'), 'socket_directories': [], 'sockets': [str(socket)], 'codex_homes': [str(home)], 'retry_delays': [2, 3, 4]}
+    values = {'runtime': str(root / 'runtime'), 'state': str(root / 'state'), 'helper': str(Path.home() / '.local/lib/codex-goal-monitor/events'), 'socket_directories': [], 'sockets': [str(socket)], 'codex_homes': [str(home)], 'retry_delays': [0.5] if args.capacity_retries else [2, 3, 4]}
     config = root / 'monitor.toml'
     config.write_text('\n'.join(f'{k} = {json.dumps(v)}' for k, v in values.items()))
     config.chmod(0o600)
@@ -74,14 +76,22 @@ trust_level = "trusted"
         time.sleep(0.3)
         tmux('send-keys', '-t', pane, 'Enter')
         wait('GoalのCapacityエラーを通知', lambda: any('Codex Capacity Error' in text for text in provider.webhooks))
-        provider.mode = 'stream'
-        wait('再開開始を成功とは分けて通知', lambda: any('Codex Goal Resume Started' in text for text in provider.webhooks))
-        wait('再開後の実ストリーム切断を失敗として通知', lambda: any('Codex Stream Error' in text for text in provider.webhooks))
-        if any('Codex Goal Resumed\n' in text for text in provider.webhooks):
-            raise AssertionError('通信エラーを復旧成功として通知した')
-        results.append('失敗ターンに成功通知を出さない')
-        provider.mode = 'success'
-        wait('通信エラー後もblockedのGoalを再試行し正常終了を確認', lambda: any('Codex Goal Resumed\n' in text for text in provider.webhooks))
+        if args.capacity_retries:
+            wait('Capacityが5回を超えても自動再開を継続', lambda: sum('Codex Capacity Error' in text for text in provider.webhooks) >= args.capacity_retries, 90)
+            recovery = next(iter(json.loads((root / 'state/recovery.json').read_text()).values()))
+            if recovery['halted'] or recovery['resumes'] < 5:
+                raise AssertionError('5回上限が残っている')
+            provider.mode = 'success'
+            wait('連続Capacityの解消後に実ターンが正常終了', lambda: any('Codex Goal Resumed\n' in text for text in provider.webhooks))
+        else:
+            provider.mode = 'stream'
+            wait('再開開始を成功とは分けて通知', lambda: any('Codex Goal Resume Started' in text for text in provider.webhooks))
+            wait('再開後の実ストリーム切断を失敗として通知', lambda: any('Codex Stream Error' in text for text in provider.webhooks))
+            if any('Codex Goal Resumed\n' in text for text in provider.webhooks):
+                raise AssertionError('通信エラーを復旧成功として通知した')
+            results.append('失敗ターンに成功通知を出さない')
+            provider.mode = 'success'
+            wait('通信エラー後もblockedのGoalを再試行し正常終了を確認', lambda: any('Codex Goal Resumed\n' in text for text in provider.webhooks))
         (root / 'results.json').write_text(json.dumps({'passed': results, 'notifications': provider.webhooks}, ensure_ascii=False, indent=2))
     finally:
         monitor.terminate()

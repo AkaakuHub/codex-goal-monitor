@@ -47,6 +47,29 @@ class RecoveryTests(unittest.TestCase):
         self.assertTrue(recovery.capacity('third', 100, [30, 60]))
         self.assertEqual(recovery.due, 130)
 
+    def test_success_resets_retry_counts_and_no_progress_count(self):
+        recovery = Recovery(resumes=5, attempt=4, wasted_turns=3)
+        recovery.success()
+        self.assertEqual((recovery.resumes, recovery.attempt, recovery.wasted_turns), (0, 0, 0))
+
+    def test_capacity_without_token_consumption_does_not_exhaust_recovery(self):
+        recovery = Recovery(token_baseline=100)
+        for count in range(12):
+            recovery.resumes += 1
+            recovery.failed_turn(100, False)
+            recovery.cancel()
+            self.assertTrue(recovery.capacity(str(count), count * 700, [30, 60, 120, 300, 600]))
+        self.assertEqual(recovery.wasted_turns, 0)
+        self.assertEqual(recovery.due, 11 * 700 + 600)
+
+    def test_repeated_token_consumption_without_new_results_is_counted(self):
+        recovery = Recovery(resumes=1, token_baseline=100)
+        for tokens in range(101, 106):
+            recovery.failed_turn(tokens, False)
+        self.assertEqual(recovery.wasted_turns, 5)
+        recovery.failed_turn(110, True)
+        self.assertEqual(recovery.wasted_turns, 0)
+
     def test_different_goal_and_stale_error_are_rejected(self):
         recovery = Recovery(goal_id='first')
         recovery.capacity('error', 0, [30])

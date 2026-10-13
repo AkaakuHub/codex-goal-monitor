@@ -22,7 +22,7 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         target.thread = 'thread'
         notify = Mock()
         with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'active', 0, 0, 0)):
-            await recover(target, 'Pursuing goal', notify, Mock(), 3)
+            await recover(target, 'Pursuing goal', notify, Mock())
         self.assertEqual(target.recovery.phase, 'verifying')
         self.assertEqual(notify.call_args.args[1], 'Codex Goal Resume Started')
 
@@ -31,10 +31,10 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         target.recovery = Recovery(phase='verifying')
         notify = Mock()
         with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'active', 0, 0, 0)):
-            await recover(target, 'Pursuing goal', notify, Mock(), 3)
+            await recover(target, 'Pursuing goal', notify, Mock())
             notify.assert_not_called()
             target.recovery.progressed = True
-            await recover(target, 'Pursuing goal', notify, Mock(), 3)
+            await recover(target, 'Pursuing goal', notify, Mock())
         self.assertEqual(notify.call_args.args[1], 'Codex Goal Resumed')
         self.assertEqual(target.recovery.phase, 'watching')
 

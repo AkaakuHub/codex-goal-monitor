@@ -9,7 +9,7 @@ from .state import State
 from .tracking import Target, binding
 
 
-async def recover(target: Target, screen: str, notify: Callable[[Target, str, str], None], state: State, max_failures: int) -> None:
+async def recover(target: Target, screen: str, notify: Callable[[Target, str, str], None], state: State) -> None:
     recovery = target.recovery
     goal = adapter.read_goal(target.process.home, target.thread or '')
     now = time.time()
@@ -52,9 +52,9 @@ async def recover(target: Target, screen: str, notify: Callable[[Target, str, st
             recovery.cancel()
             notify(target, 'Codex Goal Recovery Failed', 'Reason: 入力欄・メニュー・処理中の状態を確認できず、自動入力を見送りました。')
         return
-    if recovery.failures >= max_failures or recovery.resumes >= 5:
+    if recovery.wasted_turns >= 5:
         recovery.halted = True
-        notify(target, 'Codex Goal Recovery Failed', 'Reason: 同じGoalの自動復旧が5回に達しました。自動入力を停止しました。')
+        notify(target, 'Codex Goal Recovery Failed', 'Reason: 新しいツール実行結果がないままトークンを消費する失敗が5回続きました。自動入力を停止しました。')
         return
     current = read_process(target.process.pid)
     fresh = await tmux.panes(target.pane.socket)
@@ -73,6 +73,7 @@ async def recover(target: Target, screen: str, notify: Callable[[Target, str, st
     _, current_screen = await tmux.command(pane.socket, 'capture-pane', '-p', '-t', pane.pane)
     if not adapter.idle_stalled(current_screen, pane.cursor_x, pane.cursor_y):
         return
+    recovery.token_baseline = goal.tokens
     recovery.resumes += 1
     recovery.goal_id = goal.goal_id
     recovery.phase = 'sent'

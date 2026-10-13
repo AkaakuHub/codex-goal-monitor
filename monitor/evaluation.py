@@ -64,6 +64,7 @@ async def evaluate(monitor: "Monitor") -> None:
             recovery.goal_id = ''
             recovery.halted = False
             recovery.resumes = 0
+            target.work_seen.clear()
         target.last_goal_id = goal.goal_id
         if goal.status != target.status:
             if goal.status == 'complete' and f'complete:{goal.goal_id}' not in recovery.seen:
@@ -76,6 +77,7 @@ async def evaluate(monitor: "Monitor") -> None:
         for kind, identity in target.failures:
             if identity in recovery.seen:
                 continue
+            recovery.failed_turn(goal.tokens, target.turn_work)
             recovery.cancel()
             if kind == 'stream' and goal.status == 'blocked' and recovery.capacity(identity, time.time(), monitor.delays):
                 recovery.goal_id = goal.goal_id
@@ -96,6 +98,7 @@ async def evaluate(monitor: "Monitor") -> None:
         target.capture_due = False
         for error in errors:
             if recovery.phase != 'watching' and error not in recovery.seen:
+                recovery.failed_turn(goal.tokens, target.turn_work)
                 recovery.cancel()
                 monitor.notify(target, 'Codex Goal Recovery Failed', 'Reason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。')
             if recovery.error is not None:
@@ -108,7 +111,7 @@ async def evaluate(monitor: "Monitor") -> None:
         if recovery.error and time.time() >= recovery.due or recovery.phase != 'watching':
             if not screen:
                 _, screen = await tmux.command(target.pane.socket, 'capture-pane', '-p', '-t', target.pane.pane)
-            await recover(target, screen, monitor.notify, monitor.state, int(monitor.config.get('max_failures', 3)))
+            await recover(target, screen, monitor.notify, monitor.state)
     monitor.state.save()
     monitor.state.status([{'tmux': t.pane.label, 'socket': str(t.pane.socket), 'pane_id': t.pane.pane, 'pid': t.process.pid, 'thread_id': t.thread, 'goal': t.status or 'unknown', 'phase': t.recovery.phase, 'halted': t.recovery.halted, 'output_monitor': 'control-subscription'} for t in monitor.targets.values()])
 
