@@ -28,6 +28,7 @@ class Target:
     turn_id: str | None = None
     proof_title: str = ''
     proof_at: float = 0
+    failures: list[tuple[str, str]] = field(default_factory=list)
 
     def bind(self, thread: str, rollout: Path, recovery: Recovery) -> None:
         if thread == self.thread and rollout == self.rollout:
@@ -61,6 +62,8 @@ class Target:
                         if turn:
                             self.turn_id = turn
                         if kind == 'started':
+                            if initial:
+                                self.failures.clear()
                             errors.clear()
                             if self.recovery.phase == 'watching':
                                 self.recovery.cancel()
@@ -68,11 +71,13 @@ class Target:
                             self.recovery.started = True
                         elif kind == 'ended':
                             self.recovery.busy = False
+                            if not initial and self.recovery.phase in ('sent', 'confirming', 'verifying'):
+                                self.recovery.progressed = True
                         elif kind == 'user':
                             errors.clear()
                             if not initial:
                                 self.recovery.cancel()
-                        elif kind == 'capacity':
+                        elif kind in ('capacity', 'stream', 'failed'):
                             self.recovery.busy = False
                             identity = f'turn:{turn or hashlib.sha256(line).hexdigest()}'
                             try:
@@ -83,7 +88,11 @@ class Target:
                             except (ValueError, TypeError):
                                 recent = False
                             if recent:
-                                errors.append(identity)
+                                if kind == 'capacity':
+                                    errors.append(identity)
+                                else:
+                                    self.failures.append((kind, identity))
+                                self.recovery.progressed = False
         except OSError:
             pass
         return errors

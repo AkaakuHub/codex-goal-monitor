@@ -1,6 +1,6 @@
 # Codex Goal Monitor
 
-同じUnixユーザーのtmuxで動くCodex CLIを自動発見し、CapacityエラーでblockedになったGoalを`/goal resume`で再開します。復旧状況・使用量制限・Goal完了をDiscordへ通知します。
+同じUnixユーザーのtmuxで動くCodex CLIを自動発見し、Capacityエラーまたはストリーム切断でblockedになったGoalを`/goal resume`で再開します。復旧状況・使用量制限・Goal完了をDiscordへ通知します。
 
 ## 動作環境
 
@@ -71,6 +71,7 @@ Capacityエラーと同じGoalであること、SQLiteの`blocked`、TUIの`Goal
 | `active`、`paused`、`budget_limited` | 再開しません。 |
 
 - 再試行の待機時間は30・60・120・300・600秒で、成功すると連続回数をリセットします。自動再開は1個のGoalにつき最大5回です。
+- Goalがactiveへ変化した時点では開始通知を送り、再開後の最初のターンが正常終了してから成功を通知します。通信エラーや実行エラーで終了した場合は失敗を通知します。activeのままのGoalへ再開コマンドは送信しません。
 - 45秒以内にGoalの`active`を確認できない場合は、自動入力を停止して通知します。
 - thread IDを取得できない既存CLIでは、復旧や通知に必要な場合に`/status`でIDを確認します。再開直前にも同じthreadであることを確認します。
 - 既存のtmuxフックと`pipe-pane`を保持し、tmuxサーバーの再起動後は再接続します。

@@ -78,6 +78,12 @@ def event(line: bytes) -> tuple[str, str | None]:
         overloaded = info == 'server_overloaded' or isinstance(info, dict) and 'server_overloaded' in info
         if overloaded or kind == 'error' and payload.get('codex_error_info') == 'server_overloaded':
             return 'capacity', payload.get('turn_id')
+        message = error.get('message', '') if isinstance(error, dict) else ''
+        if error or kind == 'error':
+            message = message or payload.get('message', '')
+            return ('stream' if isinstance(message, str) and message.startswith('stream disconnected before completion:') else 'failed'), payload.get('turn_id')
+        if kind == 'turn_aborted':
+            return 'failed', payload.get('turn_id')
         if kind in ('task_started', 'turn_started'):
             return 'started', payload.get('turn_id')
         if kind in ('task_complete', 'turn_complete', 'turn_aborted'):

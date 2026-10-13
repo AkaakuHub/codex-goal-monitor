@@ -20,6 +20,7 @@ class Recovery:
     started: bool = False
     busy: bool = False
     resumes: int = 0
+    progressed: bool = False
 
     def capacity(self, identity: str, now: float, delays: list[float]) -> bool:
         if identity in self.seen or self.halted:
@@ -37,6 +38,7 @@ class Recovery:
     def cancel(self) -> None:
         self.error = None
         self.phase = 'watching'
+        self.progressed = False
 
     def success(self) -> None:
         self.cancel()

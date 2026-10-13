@@ -107,7 +107,7 @@ class Monitor:
         self.wake()
         try:
             while not self.stop.is_set():
-                pending = [t.recovery for t in self.targets.values() if t.recovery.error and not t.recovery.halted]
+                pending = [t.recovery for t in self.targets.values() if t.recovery.error and not t.recovery.halted and t.recovery.phase != 'verifying']
                 deadlines = [r.deadline if r.phase != 'watching' else r.due if r.due > time.time() else r.due + 300 for r in pending]
                 timeout = max(0.1, min(deadlines) - time.time()) if deadlines else None
                 changed = asyncio.create_task(self.changed.wait())

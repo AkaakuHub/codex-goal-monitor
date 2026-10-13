@@ -49,6 +49,9 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         response = {'id': 'response-test', 'object': 'response', 'status': 'in_progress', 'output': []}
         self.emit('response.created', {'type': 'response.created', 'response': response})
+        if self.server.mode == 'stream':
+            self.close_connection = True
+            return
         time.sleep(4)
         item = {'id': 'message-test', 'type': 'message', 'role': 'assistant', 'content': [{'type': 'output_text', 'text': 'Local test completed.'}]}
         self.emit('response.output_item.done', {'type': 'response.output_item.done', 'output_index': 0, 'item': item})

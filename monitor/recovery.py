@@ -22,10 +22,15 @@ async def recover(target: Target, screen: str, notify: Callable[[Target, str, st
     if goal.status in ('paused', 'usage_limited', 'budget_limited', 'complete'):
         recovery.cancel()
         return
+    if recovery.phase == 'verifying':
+        if goal.status == 'active' and recovery.progressed:
+            recovery.success()
+            notify(target, 'Codex Goal Resumed', 'Action: /goal resume\nResult: Success (first resumed turn completed)')
+        return
     if recovery.phase in ('sent', 'confirming'):
         if goal.status == 'active' and ('Pursuing goal' in screen or recovery.started and recovery.busy):
-            recovery.success()
-            notify(target, 'Codex Goal Resumed', 'Action: /goal resume\nResult: Success')
+            recovery.phase = 'verifying'
+            notify(target, 'Codex Goal Resume Started', 'Action: /goal resume\nResult: Goal active; awaiting first completed turn')
         elif now >= recovery.deadline:
             recovery.failures += 1
             recovery.halted = True

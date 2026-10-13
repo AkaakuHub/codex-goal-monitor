@@ -73,6 +73,17 @@ async def evaluate(monitor: "Monitor") -> None:
                 monitor.notify(target, 'Codex Goal Usage Limited', 'Action: Notify only')
             target.status = goal.status
         errors = target.replay()
+        for kind, identity in target.failures:
+            if identity in recovery.seen:
+                continue
+            recovery.cancel()
+            if kind == 'stream' and goal.status == 'blocked' and recovery.capacity(identity, time.time(), monitor.delays):
+                recovery.goal_id = goal.goal_id
+                monitor.notify(target, 'Codex Stream Error', 'Action: Resume scheduled')
+            else:
+                recovery.seen.add(identity)
+                monitor.notify(target, 'Codex Goal Recovery Failed', 'Reason: ターンが通信エラーまたは実行エラーで終了しました。Goalがblockedでない場合は自動入力を行いません。')
+        target.failures.clear()
         if target.pending_capacity:
             errors.append(target.pending_capacity)
             target.pending_capacity = None
