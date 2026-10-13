@@ -63,6 +63,22 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIn('Codex Goal Recovery Failed', titles)
                     self.assertIsNone(recovery.error)
 
+    async def test_capacity_recurring_before_active_observation_is_retried(self):
+        pane = Pane(Path('/socket'), '%1', 'test', '0', '0', 10, '/tty', '', False, 2, 2, False)
+        process = Process(10, 1, 'start', '/tty', Path('/home'))
+        recovery = Recovery(phase='sent', error='original', goal_id='goal', attempt=1, seen={'original'})
+        target = Target(pane, process, -1, thread='thread', rollout=Path('/rollout'), recovery=recovery, capture_due=False)
+        monitor = Mock()
+        monitor.servers = [pane.socket]
+        monitor.targets = {pane.key: target}
+        monitor.delays = [30, 60]
+        monitor.config = {}
+        with patch('monitor.evaluation.tmux.panes', new=AsyncMock(return_value=[pane])), patch('monitor.evaluation.read_process', return_value=process), patch('monitor.evaluation.binding', return_value=('thread', target.rollout)), patch('monitor.adapter.read_goal', return_value=Goal('goal', 'blocked', 0, 0, 0)), patch.object(Target, 'replay', return_value=['turn:new']):
+            await evaluate(monitor)
+        self.assertEqual(recovery.error, 'turn:new')
+        self.assertEqual(recovery.phase, 'watching')
+        self.assertGreater(recovery.due, time.time() + 50)
+
     def test_failed_and_aborted_turns_are_not_successful(self):
         stream = {'type': 'event_msg', 'payload': {'type': 'task_complete', 'turn_id': 'turn', 'error': {'codex_error_info': 'other', 'message': 'stream disconnected before completion: An error occurred while processing your request.'}}}
         self.assertEqual(event(json.dumps(stream).encode()), ('stream', 'turn'))

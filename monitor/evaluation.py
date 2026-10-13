@@ -95,7 +95,7 @@ async def evaluate(monitor: "Monitor") -> None:
                 recovery.busy = False
         target.capture_due = False
         for error in errors:
-            if recovery.phase == 'verifying' and error not in recovery.seen:
+            if recovery.phase != 'watching' and error not in recovery.seen:
                 recovery.cancel()
                 monitor.notify(target, 'Codex Goal Recovery Failed', 'Reason: 再開後のターンでCapacityエラーが再発しました。待機時間を延ばして再試行します。')
             if recovery.error is not None:
