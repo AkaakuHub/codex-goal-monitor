@@ -78,17 +78,22 @@ def event(line: bytes) -> tuple[str, str | None]:
         error = payload.get('error') or {}
         info = error.get('codex_error_info') if isinstance(error, dict) else None
         overloaded = info == 'server_overloaded' or isinstance(info, dict) and 'server_overloaded' in info
-        if overloaded or kind == 'error' and payload.get('codex_error_info') == 'server_overloaded':
-            return 'capacity', payload.get('turn_id')
         message = error.get('message', '') if isinstance(error, dict) else ''
+        message = message or payload.get('message', '')
+        rate_limited = (bool(error) or kind == 'error') and (
+            isinstance(error, dict) and error.get('status_code') == 429
+            or payload.get('status_code') == 429
+            or isinstance(message, str) and bool(re.search(r'\b(?:HTTP\s*)?429\b', message))
+        )
+        if overloaded or rate_limited or kind == 'error' and payload.get('codex_error_info') == 'server_overloaded':
+            return 'capacity', payload.get('turn_id')
         if error or kind == 'error':
-            message = message or payload.get('message', '')
             return ('stream' if isinstance(message, str) and message.startswith(('stream disconnected before completion:', 'Error running remote compact task: stream disconnected before completion:')) else 'failed'), payload.get('turn_id')
         if kind == 'turn_aborted':
-            return 'failed', payload.get('turn_id')
+            return 'aborted', payload.get('turn_id')
         if kind in ('task_started', 'turn_started'):
             return 'started', payload.get('turn_id')
-        if kind in ('task_complete', 'turn_complete', 'turn_aborted'):
+        if kind in ('task_complete', 'turn_complete'):
             return 'ended', payload.get('turn_id')
         if kind == 'user_message':
             return 'user', None

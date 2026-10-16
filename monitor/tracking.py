@@ -84,6 +84,9 @@ class Target:
                             self.recovery.busy = False
                             if not initial and self.recovery.phase in ('sent', 'confirming', 'verifying'):
                                 self.recovery.progressed = True
+                        elif kind == 'aborted':
+                            self.recovery.busy = False
+                            self.recovery.progressed = False
                         elif kind == 'user':
                             errors.clear()
                             if not initial:

@@ -53,10 +53,9 @@ async def evaluate(monitor: "Monitor") -> None:
         goal = adapter.read_goal(target.process.home, target.thread)
         if not goal:
             target.replay()
+            target.failures.clear()
             target.pending_capacity = None
-            if target.recovery.error:
-                target.recovery.cancel()
-                monitor.notify(target, 'Codex Goal Recovery Failed', 'Reason: SQLiteのGoal状態を確認できないため自動入力を行いません。')
+            target.recovery.cancel()
             continue
         recovery = target.recovery
         if (target.last_goal_id or recovery.goal_id) and (target.last_goal_id or recovery.goal_id) != goal.goal_id:
@@ -79,6 +78,9 @@ async def evaluate(monitor: "Monitor") -> None:
                 continue
             recovery.failed_turn(goal.tokens, target.turn_work)
             recovery.cancel()
+            if goal.status in ('paused', 'complete', 'budget_limited', 'usage_limited'):
+                recovery.seen.add(identity)
+                continue
             if kind == 'stream' and goal.status == 'blocked' and recovery.capacity(identity, time.time(), monitor.delays):
                 recovery.goal_id = goal.goal_id
                 monitor.notify(target, 'Codex Stream Error', 'Action: Resume scheduled')

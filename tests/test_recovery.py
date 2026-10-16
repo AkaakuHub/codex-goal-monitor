@@ -39,7 +39,7 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(target.recovery.phase, 'watching')
 
     async def test_stream_failure_is_reported_without_input_to_active_goal(self):
-        for status in ('active', 'blocked', 'paused', 'complete'):
+        for status in ('active', 'blocked', 'paused', 'complete', 'budget_limited', 'usage_limited'):
             with self.subTest(status=status):
                 pane = Pane(Path('/socket'), '%1', 'test', '0', '0', 10, '/tty', '', False, 2, 2, False)
                 process = Process(10, 1, 'start', '/tty', Path('/home'))
@@ -59,9 +59,23 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
                     self.assertIn('Codex Stream Error', titles)
                     self.assertEqual(recovery.error, 'turn:failure')
                     self.assertGreater(recovery.due, time.time() + 50)
-                else:
+                elif status == 'active':
                     self.assertIn('Codex Goal Recovery Failed', titles)
                     self.assertIsNone(recovery.error)
+                else:
+                    self.assertNotIn('Codex Goal Recovery Failed', titles)
+                    self.assertIsNone(recovery.error)
+
+    async def test_removed_goal_does_not_report_recovery_failure(self):
+        pane = Pane(Path('/socket'), '%1', 'test', '0', '0', 10, '/tty', '', False, 2, 2, False)
+        process = Process(10, 1, 'start', '/tty', Path('/home'))
+        recovery = Recovery(error='original', goal_id='goal')
+        target = Target(pane, process, -1, thread='thread', rollout=Path('/rollout'), recovery=recovery, capture_due=False)
+        monitor = Mock(servers=[pane.socket], targets={pane.key: target})
+        with patch('monitor.evaluation.tmux.panes', new=AsyncMock(return_value=[pane])), patch('monitor.evaluation.read_process', return_value=process), patch('monitor.evaluation.binding', return_value=('thread', target.rollout)), patch('monitor.adapter.read_goal', return_value=None), patch.object(Target, 'replay', return_value=[]):
+            await evaluate(monitor)
+        monitor.notify.assert_not_called()
+        self.assertIsNone(recovery.error)
 
     async def test_capacity_recurring_before_active_observation_is_retried(self):
         pane = Pane(Path('/socket'), '%1', 'test', '0', '0', 10, '/tty', '', False, 2, 2, False)
@@ -120,7 +134,10 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(event(json.dumps(stream).encode()), ('failed', 'turn'))
         stream['payload']['error']['message'] = 'Permission denied'
         self.assertEqual(event(json.dumps(stream).encode()), ('failed', 'turn'))
-        self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn"}}'), ('failed', 'turn'))
+        self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"turn_aborted","turn_id":"turn"}}'), ('aborted', 'turn'))
+        self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"task_complete","turn_id":"turn","error":{"status_code":429,"message":"rate limit"}}}'), ('capacity', 'turn'))
+        self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"task_complete","turn_id":"turn","error":{"message":"HTTP 429 Too Many Requests"}}}'), ('capacity', 'turn'))
+        self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"user_message","message":"429"}}'), ('user', None))
         self.assertEqual(event(b'{"type":"event_msg","payload":{"type":"error","will_retry":true,"message":"stream disconnected before completion: retrying"}}'), ('', None))
 
     def test_remote_compact_failure_reaches_the_recovery_queue(self):
@@ -134,6 +151,18 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
                 target.replay()
             self.assertEqual(target.failures, [('stream', 'turn:compact-turn')])
             self.assertFalse(target.recovery.busy)
+
+    def test_manual_abort_is_not_a_failed_or_completed_turn(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'session.jsonl'
+            record = {'timestamp': datetime.now(UTC).isoformat(), 'type': 'event_msg', 'payload': {'type': 'turn_aborted', 'turn_id': 'manual'}}
+            path.write_text(json.dumps(record) + '\n')
+            target = Target(Mock(), Mock(), -1, thread='thread', rollout=path, recovery=Recovery(phase='verifying', busy=True))
+            with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'paused', 0, 0, int((time.time() - 10) * 1000))):
+                self.assertEqual(target.replay(), [])
+            self.assertEqual(target.failures, [])
+            self.assertFalse(target.recovery.busy)
+            self.assertFalse(target.recovery.progressed)
 
     def test_replay_preserves_failure_even_if_a_new_turn_starts(self):
         with tempfile.TemporaryDirectory() as directory:
