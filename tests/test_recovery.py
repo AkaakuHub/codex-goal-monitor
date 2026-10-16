@@ -38,6 +38,17 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(notify.call_args.args[1], 'Codex Goal Resumed')
         self.assertEqual(target.recovery.phase, 'watching')
 
+    async def test_goal_paused_by_user_request_cancels_recovery_without_failure(self):
+        target = Mock()
+        target.recovery = Recovery(phase='verifying', progressed=True, error='previous')
+        target.thread = 'thread'
+        notify = Mock()
+        with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'paused', 0, 0, 0)):
+            await recover(target, '', notify, Mock())
+        notify.assert_not_called()
+        self.assertIsNone(target.recovery.error)
+        self.assertEqual(target.recovery.phase, 'watching')
+
     async def test_stream_failure_is_reported_without_input_to_active_goal(self):
         for status in ('active', 'blocked', 'paused', 'complete', 'budget_limited', 'usage_limited'):
             with self.subTest(status=status):
@@ -153,16 +164,17 @@ class ResumedTurnTests(unittest.IsolatedAsyncioTestCase):
             self.assertFalse(target.recovery.busy)
 
     def test_manual_abort_is_not_a_failed_or_completed_turn(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / 'session.jsonl'
-            record = {'timestamp': datetime.now(UTC).isoformat(), 'type': 'event_msg', 'payload': {'type': 'turn_aborted', 'turn_id': 'manual'}}
-            path.write_text(json.dumps(record) + '\n')
-            target = Target(Mock(), Mock(), -1, thread='thread', rollout=path, recovery=Recovery(phase='verifying', busy=True))
-            with patch('monitor.adapter.read_goal', return_value=Goal('goal', 'paused', 0, 0, int((time.time() - 10) * 1000))):
-                self.assertEqual(target.replay(), [])
-            self.assertEqual(target.failures, [])
-            self.assertFalse(target.recovery.busy)
-            self.assertFalse(target.recovery.progressed)
+        for status in ('active', 'paused'):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / 'session.jsonl'
+                record = {'timestamp': datetime.now(UTC).isoformat(), 'type': 'event_msg', 'payload': {'type': 'turn_aborted', 'turn_id': 'manual'}}
+                path.write_text(json.dumps(record) + '\n')
+                target = Target(Mock(), Mock(), -1, thread='thread', rollout=path, recovery=Recovery(phase='verifying', busy=True))
+                with patch('monitor.adapter.read_goal', return_value=Goal('goal', status, 0, 0, int((time.time() - 10) * 1000))):
+                    self.assertEqual(target.replay(), [])
+                self.assertEqual(target.failures, [])
+                self.assertFalse(target.recovery.busy)
+                self.assertFalse(target.recovery.progressed)
 
     def test_replay_preserves_failure_even_if_a_new_turn_starts(self):
         with tempfile.TemporaryDirectory() as directory:
