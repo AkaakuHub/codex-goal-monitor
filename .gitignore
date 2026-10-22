@@ -1,5 +1,8 @@
 __pycache__/
 build/
+dist/
+target/
+*.egg-info/
 .venv/
 .ruff_cache/
 .env
