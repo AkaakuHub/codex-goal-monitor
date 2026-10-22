@@ -54,18 +54,22 @@
       "macos-x64",
       "windows-x64"
     ],
-    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39763812770",
-    "head_sha": "a5c8cf0bd48ed63cad49ca082f56cf7e165572a4",
+    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39770474884",
+    "head_sha": "397e5ae38a459b2d118cd5fa143e9a5c33ad3808",
     "checks": [
       "clippy",
       "test",
       "release build",
-      "startup (--version on Windows, --help on Linux/macOS)",
+      "startup and exact version output",
+      "macOS bundle version matches Cargo package version",
       "autostart registration and removal",
       "artifact upload"
     ],
     "desktop_interaction_verified": false,
-    "login_start_verified": false
+    "login_start_verified": false,
+    "version_output": "0.2.1",
+    "version_match_verified": true,
+    "macos_bundle_version_match": true
   },
   "discord_validation": "Local HTTP fixture verified sender label, disabled mentions and retry after HTTP 429. No real Discord delivery was performed.",
   "deployment": {
