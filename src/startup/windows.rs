@@ -5,18 +5,13 @@ use windows_registry::CURRENT_USER;
 
 const KEY: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 const NAME: &str = "Codex Goal Monitor";
+const FILE_NOT_FOUND: i32 = 0x8007_0002_u32 as i32;
 
 fn missing<T>(result: windows_registry::Result<T>) -> Result<Option<T>> {
     match result {
         Ok(value) => Ok(Some(value)),
-        Err(error) => {
-            let error = std::io::Error::from(error);
-            if error.kind() == std::io::ErrorKind::NotFound {
-                Ok(None)
-            } else {
-                Err(error.into())
-            }
-        }
+        Err(error) if error.code().0 == FILE_NOT_FOUND => Ok(None),
+        Err(error) => Err(error.into()),
     }
 }
 
