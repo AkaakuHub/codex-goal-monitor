@@ -1,16 +1,12 @@
 [Unit]
-Description=Codex CLIのtmux監視とCapacityエラーからのGoal復旧
+Description=Codex Goalの監視・復旧とDiscord通知
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=@PROJECT_DIRECTORY@
-EnvironmentFile=%h/.config/codex-goal-monitor/monitor.env
-ExecStart=/usr/bin/python3 -m monitor.service --config %h/.config/codex-goal-monitor/config.toml
+ExecStart=%h/.local/opt/codex-goal-monitor/codex-goal-monitor --headless
 Restart=on-failure
 RestartSec=5
-RuntimeDirectory=codex-goal-monitor
-RuntimeDirectoryMode=0700
 UMask=0077
 NoNewPrivileges=true
 

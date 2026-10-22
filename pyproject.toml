@@ -15,8 +15,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-build = ["pyinstaller>=6.16,<7"]
+build = ["Nuitka>=4.3,<5", "ordered-set>=4,<5", "zstandard>=0.23,<1"]
 dev = ["ruff>=0.14,<1"]
+
+[project.gui-scripts]
+codex-goal-monitor = "monitor.desktop.app:main"
 
 [tool.setuptools.packages.find]
 include = ["monitor*"]
