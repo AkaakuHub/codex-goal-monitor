@@ -88,3 +88,9 @@ cargo build --release --locked
 ```
 
 出力先は`target/release/codex-goal-monitor`です。Windowsでは拡張子が`.exe`になります。GitHub Actionsでは各OSでテストとネイティブビルドを実行します。
+
+## 検証結果
+
+[検証結果](reports/native-validation.json)にLinux ARM64での測定を保存しています。実行ファイルは約1.8MBです。接続後の5秒間の待機測定ではRSSが約3.2MiB、CPU時間の増分は0.00秒、ディスク読み書きの増分は0バイトでした。子プロセスはありません。
+
+Codex CLI 0.163.0を使い、通常のターミナルとtmuxの両方でCapacityエラーからの再開と、その後のターンの正常終了を確認しました。通知の送信元ラベルとHTTP429の再送はローカルHTTPサーバーで検証しています。実際のDiscordへの送信と、Windows・macOSの実行検証は行っていません。GitHub Actionsのワークフローは設定済みですが、この作業環境からは実行していません。

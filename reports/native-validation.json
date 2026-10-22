@@ -1,0 +1,57 @@
+{
+  "validated_at": "2026-10-22T09:16:09.158431+00:00",
+  "platform": "linux-arm64",
+  "version": "0.2.0",
+  "binary": {
+    "bytes": 1840000,
+    "sha256": "6e9dc01c619fd206b398ed21924d01f52747b5588e035395cc33332ff05824f0"
+  },
+  "archive": {
+    "path": "dist/codex-goal-monitor-linux-arm64.tar.gz",
+    "bytes": 1015236,
+    "sha256": "db597bb880bb365d0db52b5ad15ec2934d56ea681fe905dd58dca77de7e77e52"
+  },
+  "idle_measurement": {
+    "binary_bytes": 1840000,
+    "auto_headless": true,
+    "connected": true,
+    "idle_seconds": 5.0,
+    "cpu_seconds": 0.0,
+    "rss_bytes": 3354624,
+    "disk_read_bytes": 0,
+    "disk_write_bytes": 0,
+    "child_processes": 0,
+    "threads": 3,
+    "cpu_clock_resolution_seconds": 0.01
+  },
+  "native_codex_integration": {
+    "platform": "linux-arm64",
+    "codex_version": "codex-cli 0.163.0",
+    "recovered_terminals": [
+      "plain",
+      "tmux"
+    ],
+    "resumed_goal_count": 2,
+    "successful_goal_count": 2,
+    "external_discord_delivery": false,
+    "monitor_child_processes": 0,
+    "elapsed_seconds": 34.338
+  },
+  "checks": {
+    "unit_tests_passed": 12,
+    "clippy": "passed with -D warnings",
+    "format": "passed",
+    "workflow_actionlint": "passed"
+  },
+  "github_actions": {
+    "execution": "not run",
+    "targets": [
+      "linux-x64",
+      "linux-arm64",
+      "macos-arm64",
+      "macos-x64",
+      "windows-x64"
+    ]
+  },
+  "discord_validation": "Local HTTP fixture verified sender label, disabled mentions and retry after HTTP 429. No real Discord delivery was performed."
+}
