@@ -44,14 +44,35 @@
     "workflow_actionlint": "passed"
   },
   "github_actions": {
-    "execution": "not run",
+    "execution": "success",
     "targets": [
       "linux-x64",
       "linux-arm64",
       "macos-arm64",
       "macos-x64",
       "windows-x64"
-    ]
+    ],
+    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39759982937",
+    "head_sha": "c7987983e51456f190d166b56180905b8103215f",
+    "checks": [
+      "clippy",
+      "test",
+      "release build",
+      "startup (--version on Windows, --help on Linux/macOS)",
+      "artifact upload"
+    ],
+    "desktop_interaction_verified": false
   },
-  "discord_validation": "Local HTTP fixture verified sender label, disabled mentions and retry after HTTP 429. No real Discord delivery was performed."
+  "discord_validation": "Local HTTP fixture verified sender label, disabled mentions and retry after HTTP 429. No real Discord delivery was performed.",
+  "deployment": {
+    "verified_at": "2026-10-22T10:07:28.811037+00:00",
+    "platform": "linux-arm64",
+    "service": "codex-goal-monitor.service",
+    "active": true,
+    "enabled": true,
+    "user_linger": true,
+    "native_binary_installed": true,
+    "existing_webhook_preserved": true,
+    "live_codex_connected": true
+  }
 }

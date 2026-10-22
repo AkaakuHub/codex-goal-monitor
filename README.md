@@ -24,7 +24,9 @@ Codexは通常どおり`codex`で起動します。共有サーバーを無効�
 
 ## 配布ファイルと起動
 
-GitHub Actionsの`Build`を実行すると、Artifactsに次のファイルが生成されます。
+[動作確認済みのビルド](https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39759982937)のArtifactsからダウンロードできます。Windows版は[codex-goal-monitor-windows-x64](https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39759982937/artifacts/12418061290)を選び、ダウンロードしたZIPと、その中のZIPを解凍してください。Artifactsの保持期間は14日です。
+
+GitHub Actionsの`Build`では次のファイルを生成します。
 
 | 対象 | 内容 |
 | --- | --- |
@@ -93,4 +95,6 @@ cargo build --release --locked
 
 [検証結果](reports/native-validation.json)にLinux ARM64での測定を保存しています。実行ファイルは約1.8MBです。接続後の5秒間の待機測定ではRSSが約3.2MiB、CPU時間の増分は0.00秒、ディスク読み書きの増分は0バイトでした。子プロセスはありません。
 
-Codex CLI 0.163.0を使い、通常のターミナルとtmuxの両方でCapacityエラーからの再開と、その後のターンの正常終了を確認しました。通知の送信元ラベルとHTTP429の再送はローカルHTTPサーバーで検証しています。実際のDiscordへの送信と、Windows・macOSの実行検証は行っていません。GitHub Actionsのワークフローは設定済みですが、この作業環境からは実行していません。
+Codex CLI 0.163.0を使い、通常のターミナルとtmuxの両方でCapacityエラーからの再開と、その後のターンの正常終了を確認しました。通知の送信元ラベルとHTTP429の再送はローカルHTTPサーバーで検証しています。実際のDiscordへの送信と、Windows・macOSのトレイ操作は未検証です。GitHub Actionsでは5種類すべてでClippy、テスト、リリースビルド、実行ファイルの起動確認、配布ファイルの生成に成功しました。Windowsの起動確認は`--version`、Linux・macOSは`--help`で行っています。
+
+このLinux ARM64環境では旧Python版を停止し、Rust版をユーザーサービスとして起動しました。既存のWebhook設定を引き継ぎ、実際のCodexへの接続と監視開始を確認済みです。自動起動が有効で、ログアウト後も動作する設定です。
