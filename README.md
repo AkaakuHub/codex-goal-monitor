@@ -114,8 +114,10 @@ cargo build --release --locked
 
 ## 検証結果
 
-[検証結果](reports/native-validation.json)にLinux ARM64での測定を保存しています。実行ファイルは約1.8MBです。接続後の5秒間の待機測定ではRSSが約3.2MiB、CPU時間の増分は0.00秒、ディスク読み書きの増分は0バイトでした。子プロセスはありません。
+[検証結果](reports/native-validation.json)にLinux ARM64での測定を保存しています。実行ファイルは約1.9MBです。接続後の5秒間の待機測定ではRSSが約3.3MiB、CPU時間の増分は0.00秒、ディスク読み書きの増分は0バイトでした。子プロセスはありません。
 
-Codex CLI 0.163.0を使い、通常のターミナルとtmuxの両方でCapacityエラーからの再開と、その後のターンの正常終了を確認しました。通知の送信元ラベルとHTTP429の再送はローカルHTTPサーバーで検証しています。実際のDiscordへの送信と、Windows・macOSのトレイ操作は未検証です。GitHub Actionsでは5種類すべてでClippy、テスト、リリースビルド、実行ファイルの起動確認、配布ファイルの生成に成功しました。Windowsの起動確認は`--version`、Linux・macOSは`--help`で行っています。
+Codex CLI 0.163.0を使い、通常のターミナルとtmuxの両方でCapacityエラーからの再開と、その後のターンの正常終了を確認しました。通知の送信元ラベルとHTTP429の再送はローカルHTTPサーバーで検証しています。実際のDiscordへの送信、Windows・macOSのトレイ操作、OSへの再ログイン後の自動起動は未検証です。GitHub Actionsでは5種類すべてでClippy、テスト、リリースビルド、実行ファイルの起動確認、自動起動の登録・解除、配布ファイルの生成に成功しました。Windowsの起動確認は`--version`、Linux・macOSは`--help`で行っています。
 
 このLinux ARM64環境では旧Python版を停止し、Rust版をユーザーサービスとして起動しました。既存のWebhook設定を引き継ぎ、実際のCodexへの接続と監視開始を確認済みです。自動起動が有効で、ログアウト後も動作する設定です。
+
+自動起動にはWindowsで[windows-registry](https://docs.rs/windows-registry/0.6.1/windows_registry/)、macOSで[plist](https://docs.rs/plist/latest/plist/)、Linuxで[systemdのユーザーサービス](https://www.freedesktop.org/software/systemd/man/latest/systemctl.html)を使用します。登録・解除は設定変更時にだけ行い、登録状態の定期確認は行いません。
