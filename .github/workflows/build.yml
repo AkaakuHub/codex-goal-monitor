@@ -1,0 +1,85 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            target: linux-x64
+          - runner: ubuntu-24.04-arm
+            target: linux-arm64
+          - runner: macos-15
+            target: macos-arm64
+          - runner: macos-15-intel
+            target: macos-x64
+          - runner: windows-2022
+            target: windows-x64
+            rustflags: -C target-feature=+crt-static
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    env:
+      RUSTFLAGS: ${{ matrix.rustflags }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Rust
+        run: rustup toolchain install stable --profile minimal --component rustfmt --component clippy
+      - name: Format
+        run: cargo +stable fmt --check
+      - name: Clippy
+        run: cargo +stable clippy --locked --all-targets -- -D warnings
+      - name: Test
+        run: cargo +stable test --locked
+      - name: Build
+        run: cargo +stable build --release --locked
+      - name: 起動を確認
+        if: runner.os != 'Windows'
+        run: target/release/codex-goal-monitor --help
+      - name: Windowsで起動を確認
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--version' -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw '実行ファイルを起動できませんでした。' }
+      - name: Linux用に圧縮
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p dist
+          tar -czf dist/codex-goal-monitor-${{ matrix.target }}.tar.gz -C target/release codex-goal-monitor
+      - name: macOS用のアプリを作成
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p "dist/Codex Goal Monitor.app/Contents/MacOS"
+          cp target/release/codex-goal-monitor "dist/Codex Goal Monitor.app/Contents/MacOS/"
+          cp deploy/macos/Info.plist "dist/Codex Goal Monitor.app/Contents/"
+          codesign --force --deep --sign - "dist/Codex Goal Monitor.app"
+          ditto -c -k --sequesterRsrc --keepParent "dist/Codex Goal Monitor.app" codex-goal-monitor-${{ matrix.target }}.zip
+          mv codex-goal-monitor-${{ matrix.target }}.zip dist/
+          rm -r "dist/Codex Goal Monitor.app"
+      - name: Windows用に圧縮
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist
+          Compress-Archive target/release/codex-goal-monitor.exe dist/codex-goal-monitor-${{ matrix.target }}.zip
+      - uses: actions/upload-artifact@v6
+        with:
+          name: codex-goal-monitor-${{ matrix.target }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
