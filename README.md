@@ -1,46 +1,41 @@
 # Codex Goal Monitor
 
-CodexのGoalを監視し、Capacityエラー・ストリーム切断から復旧してDiscordへ通知します。Windowsネイティブ、macOS、Linuxに対応するRust製の常駐アプリです。
+[![Build](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml/badge.svg)](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)
 
-## 動作
+CodexのGoalを監視し、Capacityエラーや通信切断から自動復旧してDiscordへ通知する、Rust製の常駐アプリです。
 
-- Windowsではタスクトレイ、macOSではメニューバーにアイコンを表示します。
-- Linux版はheadless専用で、GUI関連のコードを含みません。
-- Windows・macOSでも`--headless`またはSSH接続ではGUIを初期化しません。
-- tmux内と通常のターミナルで動くCodexを、同じ接続で監視します。
+- **Windows・macOS・Linuxに対応**。通常のターミナルとtmuxの両方を監視します。
+- **イベントで監視**。定期ポーリング、ログの走査、監視状態の定期保存は行いません。
+- **設定は3項目**。Discord Webhook URL、送信元ラベル、自動起動を設定します。
+- **ネイティブ実行**。Python・Qt・WebViewの同梱や、起動時の自己展開はありません。
 
-監視側はCodexのイベントを待ちます。プロセスやディスクの定期スキャン、セッションログの走査、監視状態の定期保存は行いません。復旧判定時だけ直近2ターンの情報をAPIから取得します。タイマーはエラー後の待機と処理期限に使用します。
+## ダウンロード
 
-Python、Qt、WebViewは同梱しません。起動時の自己展開も行いません。設定画面を開いたときだけOSの入力ダイアログを使用します。
+[GitHub ActionsのBuild](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)で、最新の成功した実行の**Artifacts**から取得します。保持期間は14日です。
 
-## 必要なもの
+| OS | Artifact | 動作 |
+| --- | --- | --- |
+| Windows x64 | `codex-goal-monitor-windows-x64` | タスクトレイに常駐します |
+| macOS Apple Silicon | `codex-goal-monitor-macos-arm64` | メニューバーに常駐します |
+| macOS Intel | `codex-goal-monitor-macos-x64` | メニューバーに常駐します |
+| Linux x64 | `codex-goal-monitor-linux-x64` | GUIなしで常駐します |
+| Linux ARM64 | `codex-goal-monitor-linux-arm64` | GUIなしで常駐します |
 
-- Codex CLI 0.163.0以上と、標準起動で使用するローカル共有app-server
-- Discord Webhook URL
+ArtifactsのZIPを解凍し、中のZIPまたは`.tar.gz`も解凍してください。Windowsでは`.exe`、macOSでは`.app`、Linuxでは実行ファイルを使用します。macOSの`.app`はApplicationsフォルダへ移動してください。アドホック署名を付けていますが、Appleの公証は行っていません。
 
-Codexは通常どおり`codex`で起動します。共有サーバーを無効化する`--no-daemon`と、別の接続先を指定する`--remote`は監視対象外です。監視アプリからスレッドを読み込んだり、Codexの起動設定を変更したりすることはありません。[Codexの接続仕様](https://learn.chatgpt.com/docs/app-server)を使用しています。
+## はじめに
 
-カスタムのCodexホームを使用する場合は、Codexと監視アプリに同じ`CODEX_HOME`の絶対パスを設定してください。WSL内のCodexにはLinux版を使用します。
+必要なものは、**Codex CLIのローカル共有app-server**と**Discord Webhook URL**です。Codex CLI 0.163.0で動作を検証しています。
 
-## 配布ファイルと起動
+1. Codexを通常どおり`codex`で起動します。
+2. Windows・macOSではアプリを起動し、Webhook URLと送信元ラベルを入力します。
+3. 自動起動する場合は、トレイの「ログイン時に自動起動」にチェックを入れます。
 
-[GitHub ActionsのBuild](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)で、最新の成功した実行のArtifactsからダウンロードできます。Windows版は`codex-goal-monitor-windows-x64`を選び、ダウンロードしたZIPと、その中のZIPを解凍してください。Artifactsの保持期間は14日です。
+`--no-daemon`や独自の`--remote`接続は監視対象外です。WSLではLinux版を使ってください。カスタムの`CODEX_HOME`を使う場合は、Codexと監視アプリで同じ絶対パスを指定します。
 
-GitHub Actionsの`Build`では次のファイルを生成します。
+### Linux・headless環境
 
-| 対象 | 内容 |
-| --- | --- |
-| Windows x64 | `.exe`を含むZIP |
-| macOS Apple Silicon・Intel | メニューバー用の`.app`を含むZIP |
-| Linux x64・ARM64 | 実行ファイルを含む`.tar.gz` |
-
-解凍後、Windowsでは`.exe`、macOSでは`.app`を起動します。Linuxでは`./codex-goal-monitor`を実行します。macOSのビルドはアドホック署名を付けますが、Appleの公証は行いません。
-
-トレイの「設定…」からWebhook URLと送信元ラベルを保存します。Webhook URLは入力時に隠し、空欄で確定した場合は現在の値を保持します。ラベルはDiscordの送信者名と通知本文に使用します。
-
-## headless環境の設定
-
-設定JSONを作成します。URLは実際のWebhook URLに置き換えてください。
+次のJSONを`settings.json`として保存し、Webhook URLを実際の値に置き換えます。
 
 ```json
 {
@@ -50,59 +45,71 @@ GitHub Actionsの`Build`では次のファイルを生成します。
 }
 ```
 
-既定の保存先はLinuxの`~/.config/codex-goal-monitor/settings.json`（`XDG_CONFIG_HOME`設定時はその配下）、macOSの`~/Library/Application Support/codex-goal-monitor/settings.json`、Windowsの`%APPDATA%\codex-goal-monitor\settings.json`です。Webhookは設定ファイルに保存します。アプリから保存したファイルのUnix権限は600です。
-
 ```sh
-chmod 600 /設定ファイルの絶対パス/settings.json
-./codex-goal-monitor --headless --config /設定ファイルの絶対パス/settings.json
+chmod 600 settings.json
+./codex-goal-monitor --headless --config ./settings.json
 ```
 
-設定変更はトレイで保存すると反映されます。headless環境でファイルを編集した場合は、監視アプリを再起動してください。同じ設定を使うアプリの多重起動は防止します。
+Windows・macOSも`--headless`またはSSH接続時はGUIなしで動作します。
 
-## 自動起動の設定
+## 設定
 
-既定では無効です。Windows・macOSではトレイの「ログイン時に自動起動」のチェックを切り替えます。Webhook URLと送信元ラベルを保存してから設定してください。`autostart`の保存とOSへの登録を同じ操作で行います。設定JSONを書き換えるだけではOSの登録は変更されません。
+| 項目 | 内容 |
+| --- | --- |
+| `webhook_url` | Discordの通知先です。設定画面では入力を隠し、空欄で確定すると現在の値を保持します |
+| `sender_label` | 通知の送信者名と本文に表示する、1〜80文字のラベルです |
+| `autostart` | 自動起動の設定です。既定値は`false`です。トレイまたは下記のコマンドから変更します |
 
-Windowsでは現在のユーザーのRunレジストリ、macOSでは`~/Library/LaunchAgents/`、Linuxではsystemdのユーザーサービスに登録します。Windows・macOSは次回ログイン時に起動します。OS側の起動制限や承認がある場合は、その設定も適用されます。
+設定はJSONで保存します。Webhook URLは平文で、アプリから保存するUnixファイルの権限は`600`です。
 
-各OSのheadless環境では、次のコマンドで設定できます。Windowsでは実行ファイル名に`.exe`を付けます。
+| OS | 既定の保存先 |
+| --- | --- |
+| Windows | `%APPDATA%\codex-goal-monitor\settings.json` |
+| macOS | `~/Library/Application Support/codex-goal-monitor/settings.json` |
+| Linux | `~/.config/codex-goal-monitor/settings.json`。`XDG_CONFIG_HOME`設定時はその配下です |
+
+`--config`で保存先を指定できます。トレイからの変更は保存時に反映されます。headless環境でファイルを編集した場合は再起動してください。同じ設定での多重起動は防止します。
+
+### 自動起動
+
+Webhook設定後、実行ファイルの配置場所を決めてから登録してください。
 
 ```sh
-./codex-goal-monitor --headless --autostart on
-./codex-goal-monitor --headless --autostart status
-./codex-goal-monitor --headless --autostart off
+./codex-goal-monitor --config ./settings.json --headless --autostart on
+./codex-goal-monitor --config ./settings.json --autostart status
+./codex-goal-monitor --config ./settings.json --autostart off
 ```
 
-`status`は設定ファイルの値とOSへの登録状態を表示します。`on`と`off`は設定して終了し、現在の監視プロセスは起動・停止しません。自動起動時にも同じ設定ファイルを使用します。`--headless`で登録すると、次回もGUIなしで起動します。GUIで使うWindows・macOSではトレイから設定してください。
+`on`・`off`は設定とOSへの登録を変更して終了します。現在の監視は起動・停止しません。JSONの値だけを書き換えてもOSの登録は変更されません。`--headless`で登録すると、次回もGUIなしで起動します。GUIで使うWindows・macOSではトレイから設定してください。
 
-実行ファイルは保存場所を決めてから自動起動を有効にしてください。macOSでは`.app`をApplicationsフォルダへ移動します。後から移動する場合は、移動前に自動起動を解除し、移動後に再登録します。削除する際も先に解除してください。
+| OS | 登録先・使用ライブラリ |
+| --- | --- |
+| Windows | 現在のユーザーのRunレジストリに、`windows-registry`で登録します |
+| macOS | ユーザーのLaunchAgentを、`plist`で作成します |
+| Linux | systemdのユーザーサービスとして登録します |
 
-## Linuxのユーザーサービス
+Windows・macOSでは次回ログイン時に起動します。Linuxでは登録後、`systemctl --user start codex-goal-monitor.service`で開始できます。ログイン前の起動やログアウト後の継続には、OS側でユーザーのlingerを有効にする必要があります。OS側の起動制限・承認も適用されます。
 
-実行ファイルを`~/.local/opt/codex-goal-monitor/codex-goal-monitor`へ配置してから、登録します。
+ファイルの移動・削除前には自動起動を解除してください。Linux・macOSは登録時の`CODEX_HOME`を保存します。Windowsでカスタムの値を使う場合は、ユーザー環境変数として設定してください。
 
-```sh
-~/.local/opt/codex-goal-monitor/codex-goal-monitor --autostart on
-systemctl --user start codex-goal-monitor.service
-journalctl --user -u codex-goal-monitor.service -f
-```
+## 復旧と通知
 
-サービス定義はアプリが作成します。Linuxは常にheadlessで起動します。通常はユーザーログイン時に起動し、ログアウト後も継続する場合やログイン前の起動には、OS側でユーザーのlingerを有効にする必要があります。このPCでは有効です。
+- 同じGoalが`blocked`で、直近の失敗がCapacityエラー・HTTP429・ストリーム切断の場合だけ再開します。再開直前にも状態を確認します。
+- 再試行の待機時間は30・60・120・300・600秒です。トークンを消費する復旧失敗が5回続くと停止します。消費のないCapacityエラーは回数だけで停止しません。
+- 手動停止、Goal完了、利用上限、予算上限では再開しません。
+- Goal完了、利用上限、復旧の待機・再開・結果をDiscordへ通知します。メンションは無効で、送信は最大5回試みます。
 
-カスタムの`CODEX_HOME`を使用する場合は、登録コマンドにも同じ環境変数を設定してください。Linux・macOSは登録時の値を起動定義に保存します。Windowsではユーザー環境変数として設定してください。
+復旧状態・通知履歴はメモリ内に保持し、アプリの再起動でリセットします。切断後の再接続はソケットの変更通知で行い、定期的には確認しません。復旧待機・結果確認・通信期限・通知再送にはタイマーを使います。
 
-## 自動復旧の条件
+## アイコンとバージョン
 
-同じGoalの直近のターンがCapacityエラー・HTTP 429・ストリーム切断で失敗し、Goalが`blocked`の場合だけ再開を予約します。再開直前にも、スレッドが読み込み済みで処理中ではないことと、同じGoalが`blocked`であることをAPIから確認します。端末へのキー送信は行いません。
+トレイには`tray-icon`の`NativeIcon::Info`を指定しています。WindowsはOS標準の`SIID_INFO`、macOSは`NSImageNameInfo`を表示します。独自の画像は作成しておらず、`.exe`・`.app`用の専用アイコンも未設定です。Linuxにはトレイアイコンがありません。
 
-- 待機時間は30・60・120・300・600秒です。再開後のターンが正常終了すると連続回数をリセットします。
-- トークン消費のないCapacityエラーは回数だけを理由に停止しません。トークンを消費する復旧失敗が5回続いた場合は停止して通知します。
-- 手動停止、完了、利用上限、予算上限では再開しません。Goal完了と利用上限をDiscordへ通知します。
-- 再開要求の結果が不明な場合は追加操作を停止します。Discord通知は最大5回再送し、HTTP 429では指定された待機時間を使用します。
+アプリのバージョンはCargoの定義から埋め込み、トレイの先頭と`--version`で表示します。macOSのアプリ情報と実行ファイルのバージョンの一致もCIで確認します。
 
-復旧状態と通知履歴はメモリ内に保持します。監視アプリの再起動でリセットされます。切断後はソケットの作成・変更イベント、または設定の再保存で再接続します。定期的な再接続は行いません。
+## ビルド・検証
 
-## 開発
+Rust 1.90以上を使用します。
 
 ```sh
 cargo test --locked
@@ -110,14 +117,8 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo build --release --locked
 ```
 
-出力先は`target/release/codex-goal-monitor`です。Windowsでは拡張子が`.exe`になります。GitHub Actionsでは各OSでテスト、ネイティブビルド、自動起動の登録・解除の確認を実行します。
+GitHub Actionsでは5環境でテスト・リリースビルド・バージョン確認・自動起動の登録と解除・配布ファイルの生成を行います。
 
-## 検証結果
+[検証記録](reports/native-validation.json)にはLinux ARM64での測定とCIの実行先を保存しています。v0.2.1の実行ファイルは約1.9MB、待機時メモリは約3.3MiBです。5秒間の計測ではCPU時間の増分は0.00秒、ディスク読み書きは0バイトでした。
 
-[検証結果](reports/native-validation.json)にLinux ARM64での測定を保存しています。実行ファイルは約1.9MBです。接続後の5秒間の待機測定ではRSSが約3.3MiB、CPU時間の増分は0.00秒、ディスク読み書きの増分は0バイトでした。子プロセスはありません。
-
-Codex CLI 0.163.0を使い、通常のターミナルとtmuxの両方でCapacityエラーからの再開と、その後のターンの正常終了を確認しました。通知の送信元ラベルとHTTP429の再送はローカルHTTPサーバーで検証しています。実際のDiscordへの送信、Windows・macOSのトレイ操作、OSへの再ログイン後の自動起動は未検証です。GitHub Actionsでは5種類すべてでClippy、テスト、リリースビルド、実行ファイルの起動確認、自動起動の登録・解除、配布ファイルの生成に成功しました。Windowsの起動確認は`--version`、Linux・macOSは`--help`で行っています。
-
-このLinux ARM64環境では旧Python版を停止し、Rust版をユーザーサービスとして起動しました。既存のWebhook設定を引き継ぎ、実際のCodexへの接続と監視開始を確認済みです。自動起動が有効で、ログアウト後も動作する設定です。
-
-自動起動にはWindowsで[windows-registry](https://docs.rs/windows-registry/0.6.1/windows_registry/)、macOSで[plist](https://docs.rs/plist/latest/plist/)、Linuxで[systemdのユーザーサービス](https://www.freedesktop.org/software/systemd/man/latest/systemctl.html)を使用します。登録・解除は設定変更時にだけ行い、登録状態の定期確認は行いません。
+通常ターミナルとtmuxでの復旧は実際のCodex CLIで検証済みです。Windows・macOSのトレイ操作、再ログイン後の自動起動、実際のDiscordへの通知到着は未検証です。

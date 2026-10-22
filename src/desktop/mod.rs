@@ -35,12 +35,17 @@ struct App {
 impl App {
     fn new(mut settings: Settings, path: PathBuf, send: SendEvent) -> Result<Self> {
         let menu = Menu::new();
+        let version = MenuItem::new(
+            format!("Codex Goal Monitor {}", env!("CARGO_PKG_VERSION")),
+            false,
+            None,
+        );
         let status = MenuItem::new("Codexの起動を待っています。", false, None);
         let configure = MenuItem::new("設定…", true, None);
         settings.autostart = startup::enabled()?;
         let autostart = CheckMenuItem::new("ログイン時に自動起動", true, settings.autostart, None);
         let quit = MenuItem::new("終了", true, None);
-        menu.append_items(&[&status, &configure, &autostart, &quit])?;
+        menu.append_items(&[&version, &status, &configure, &autostart, &quit])?;
         let tray = TrayIconBuilder::new()
             .with_tooltip("Codex Goal Monitor")
             .with_native_icon(NativeIcon::Info)
