@@ -58,3 +58,6 @@ pub fn start(status: Status) -> SyncSender<Notification> {
     });
     sender
 }
+
+#[cfg(test)]
+mod tests;
