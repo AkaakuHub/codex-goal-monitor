@@ -1,4 +1,3 @@
-#[cfg(not(target_os = "linux"))]
 use std::io::Write;
 use std::{
     fs,
@@ -13,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub struct Settings {
     pub webhook_url: String,
     pub sender_label: String,
+    pub autostart: bool,
 }
 
 impl Default for Settings {
@@ -20,6 +20,7 @@ impl Default for Settings {
         Self {
             webhook_url: String::new(),
             sender_label: "Codex".into(),
+            autostart: false,
         }
     }
 }
@@ -59,7 +60,6 @@ impl Settings {
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
     pub fn save(&self, path: &Path) -> Result<()> {
         self.validate()?;
         if path.exists() && Self::load(path)? == *self {

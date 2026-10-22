@@ -56,6 +56,48 @@ jobs:
         run: |
           $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--version' -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw '実行ファイルを起動できませんでした。' }
+      - name: Linux・macOSで自動起動の切り替えを確認
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          settings="$PWD/target/startup check/settings.json"
+          mkdir -p "$(dirname "$settings")"
+          echo '{"webhook_url":"https://discord.com/api/webhooks/123/test","sender_label":"CI","autostart":false}' > "$settings"
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo systemctl start "user@$(id -u).service"
+            export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          fi
+          target/release/codex-goal-monitor --headless --config "$settings" --autostart on
+          if [ "$RUNNER_OS" = Linux ]; then
+            systemctl --user is-enabled --quiet codex-goal-monitor.service
+            systemd-analyze --user verify "$HOME/.config/systemd/user/codex-goal-monitor.service"
+          else
+            plutil -lint "$HOME/Library/LaunchAgents/org.akaakuhub.codex-goal-monitor.plist"
+          fi
+          target/release/codex-goal-monitor --headless --config "$settings" --autostart status
+          target/release/codex-goal-monitor --headless --config "$settings" --autostart off
+          if [ "$RUNNER_OS" = Linux ]; then
+            if systemctl --user is-enabled --quiet codex-goal-monitor.service; then exit 1; fi
+          else
+            test ! -e "$HOME/Library/LaunchAgents/org.akaakuhub.codex-goal-monitor.plist"
+          fi
+      - name: Windowsで自動起動の切り替えを確認
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $settings = "$PWD/target/startup check/settings.json"
+          New-Item -ItemType Directory -Force (Split-Path $settings)
+          '{"webhook_url":"https://discord.com/api/webhooks/123/test","sender_label":"CI","autostart":false}' | Set-Content $settings
+          foreach ($mode in @('on', 'off')) {
+            $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--headless', '--config', "`"$settings`"", '--autostart', $mode -Wait -PassThru
+            if ($process.ExitCode -ne 0) { throw "自動起動の$modeに失敗しました。" }
+            $saved = Get-Content $settings -Raw | ConvertFrom-Json
+            if ($saved.autostart -ne ($mode -eq 'on')) { throw '自動起動の設定が保存されていません。' }
+            $key = Get-Item 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+            $registered = $key.GetValue('Codex Goal Monitor')
+            if (($null -ne $registered) -ne ($mode -eq 'on')) { throw '自動起動の登録状態が正しくありません。' }
+          }
       - name: Linux用に圧縮
         if: runner.os == 'Linux'
         run: |

@@ -51,6 +51,7 @@ fn a_rate_limited_webhook_is_retried_with_the_sender_label_and_mentions_disabled
             settings: Settings {
                 webhook_url: format!("http://{address}/webhook"),
                 sender_label: "開発PC".into(),
+                autostart: false,
             },
             thread: "test-thread".into(),
             title: "Codex Goal Completed",

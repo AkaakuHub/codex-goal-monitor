@@ -6,10 +6,10 @@ use anyhow::Result;
 use tokio::sync::watch;
 use tray_icon::{
     NativeIcon, TrayIcon, TrayIconBuilder,
-    menu::{Menu, MenuEvent, MenuItem},
+    menu::{CheckMenuItem, Menu, MenuEvent, MenuItem},
 };
 
-use crate::{config::Settings, monitor};
+use crate::{config::Settings, monitor, startup};
 
 pub enum Event {
     Menu(MenuEvent),
@@ -25,6 +25,7 @@ struct App {
     _tray: TrayIcon,
     status: MenuItem,
     configure: MenuItem,
+    autostart: CheckMenuItem,
     quit: MenuItem,
     settings: Settings,
     path: PathBuf,
@@ -32,12 +33,14 @@ struct App {
 }
 
 impl App {
-    fn new(settings: Settings, path: PathBuf, send: SendEvent) -> Result<Self> {
+    fn new(mut settings: Settings, path: PathBuf, send: SendEvent) -> Result<Self> {
         let menu = Menu::new();
         let status = MenuItem::new("Codexの起動を待っています。", false, None);
         let configure = MenuItem::new("設定…", true, None);
+        settings.autostart = startup::enabled()?;
+        let autostart = CheckMenuItem::new("ログイン時に自動起動", true, settings.autostart, None);
         let quit = MenuItem::new("終了", true, None);
-        menu.append_items(&[&status, &configure, &quit])?;
+        menu.append_items(&[&status, &configure, &autostart, &quit])?;
         let tray = TrayIconBuilder::new()
             .with_tooltip("Codex Goal Monitor")
             .with_native_icon(NativeIcon::Info)
@@ -54,6 +57,7 @@ impl App {
             _tray: tray,
             status,
             configure,
+            autostart,
             quit,
             settings,
             path,
@@ -73,6 +77,18 @@ impl App {
                 return true;
             }
             Event::Menu(event) if event.id == self.configure.id() => self.configure(),
+            Event::Menu(event) if event.id == self.autostart.id() => {
+                if let Err(error) =
+                    startup::configure(&mut self.settings, &self.path, self.autostart.is_checked())
+                {
+                    self.autostart.set_checked(self.settings.autostart);
+                    tinyfiledialogs::message_box_ok(
+                        "自動起動を変更できません",
+                        &format!("{error:#}"),
+                        tinyfiledialogs::MessageBoxIcon::Error,
+                    );
+                }
+            }
             _ => {}
         }
         false
@@ -99,6 +115,7 @@ impl App {
                 url.trim().into()
             },
             sender_label: label.trim().into(),
+            autostart: self.settings.autostart,
         };
         match settings.save(&self.path) {
             Ok(()) => {

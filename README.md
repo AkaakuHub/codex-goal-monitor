@@ -24,7 +24,7 @@ Codexは通常どおり`codex`で起動します。共有サーバーを無効�
 
 ## 配布ファイルと起動
 
-[動作確認済みのビルド](https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39759982937)のArtifactsからダウンロードできます。Windows版は[codex-goal-monitor-windows-x64](https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/39759982937/artifacts/12418061290)を選び、ダウンロードしたZIPと、その中のZIPを解凍してください。Artifactsの保持期間は14日です。
+[GitHub ActionsのBuild](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)で、最新の成功した実行のArtifactsからダウンロードできます。Windows版は`codex-goal-monitor-windows-x64`を選び、ダウンロードしたZIPと、その中のZIPを解凍してください。Artifactsの保持期間は14日です。
 
 GitHub Actionsの`Build`では次のファイルを生成します。
 
@@ -45,7 +45,8 @@ GitHub Actionsの`Build`では次のファイルを生成します。
 ```json
 {
   "webhook_url": "https://discord.com/api/webhooks/123456789/WEBHOOK_TOKEN",
-  "sender_label": "開発サーバー"
+  "sender_label": "開発サーバー",
+  "autostart": false
 }
 ```
 
@@ -58,17 +59,37 @@ chmod 600 /設定ファイルの絶対パス/settings.json
 
 設定変更はトレイで保存すると反映されます。headless環境でファイルを編集した場合は、監視アプリを再起動してください。同じ設定を使うアプリの多重起動は防止します。
 
-## Linuxのユーザーサービス
+## 自動起動の設定
 
-実行ファイルを`~/.local/opt/codex-goal-monitor/codex-goal-monitor`へ配置し、[サービス定義](deploy/codex-goal-monitor.service)を`~/.config/systemd/user/`へコピーします。
+既定では無効です。Windows・macOSではトレイの「ログイン時に自動起動」のチェックを切り替えます。Webhook URLと送信元ラベルを保存してから設定してください。`autostart`の保存とOSへの登録を同じ操作で行います。設定JSONを書き換えるだけではOSの登録は変更されません。
+
+Windowsでは現在のユーザーのRunレジストリ、macOSでは`~/Library/LaunchAgents/`、Linuxではsystemdのユーザーサービスに登録します。Windows・macOSは次回ログイン時に起動します。OS側の起動制限や承認がある場合は、その設定も適用されます。
+
+各OSのheadless環境では、次のコマンドで設定できます。Windowsでは実行ファイル名に`.exe`を付けます。
 
 ```sh
-systemctl --user daemon-reload
-systemctl --user enable --now codex-goal-monitor.service
+./codex-goal-monitor --headless --autostart on
+./codex-goal-monitor --headless --autostart status
+./codex-goal-monitor --headless --autostart off
+```
+
+`status`は設定ファイルの値とOSへの登録状態を表示します。`on`と`off`は設定して終了し、現在の監視プロセスは起動・停止しません。自動起動時にも同じ設定ファイルを使用します。`--headless`で登録すると、次回もGUIなしで起動します。GUIで使うWindows・macOSではトレイから設定してください。
+
+実行ファイルは保存場所を決めてから自動起動を有効にしてください。macOSでは`.app`をApplicationsフォルダへ移動します。後から移動する場合は、移動前に自動起動を解除し、移動後に再登録します。削除する際も先に解除してください。
+
+## Linuxのユーザーサービス
+
+実行ファイルを`~/.local/opt/codex-goal-monitor/codex-goal-monitor`へ配置してから、登録します。
+
+```sh
+~/.local/opt/codex-goal-monitor/codex-goal-monitor --autostart on
+systemctl --user start codex-goal-monitor.service
 journalctl --user -u codex-goal-monitor.service -f
 ```
 
-サービスはheadlessで起動します。トレイ版と同時に起動しないでください。カスタムの`CODEX_HOME`を使用する場合は、サービスにも環境変数を設定します。
+サービス定義はアプリが作成します。Linuxは常にheadlessで起動します。通常はユーザーログイン時に起動し、ログアウト後も継続する場合やログイン前の起動には、OS側でユーザーのlingerを有効にする必要があります。このPCでは有効です。
+
+カスタムの`CODEX_HOME`を使用する場合は、登録コマンドにも同じ環境変数を設定してください。Linux・macOSは登録時の値を起動定義に保存します。Windowsではユーザー環境変数として設定してください。
 
 ## 自動復旧の条件
 
@@ -89,7 +110,7 @@ cargo clippy --locked --all-targets -- -D warnings
 cargo build --release --locked
 ```
 
-出力先は`target/release/codex-goal-monitor`です。Windowsでは拡張子が`.exe`になります。GitHub Actionsでは各OSでテストとネイティブビルドを実行します。
+出力先は`target/release/codex-goal-monitor`です。Windowsでは拡張子が`.exe`になります。GitHub Actionsでは各OSでテスト、ネイティブビルド、自動起動の登録・解除の確認を実行します。
 
 ## 検証結果
 
