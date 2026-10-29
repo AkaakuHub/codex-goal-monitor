@@ -1,0 +1,44 @@
+{
+  "validated_at": "2026-10-29",
+  "version": "0.2.2",
+  "windows": {
+    "platform": "windows-x64",
+    "administrator": false,
+    "release_asset_tested": "codex-goal-monitor-windows-x64.zip",
+    "configuration_path_contains_spaces_and_japanese": true,
+    "hkcu_registration_and_removal": true,
+    "settings_saved": true,
+    "headless_process_stays_running": true,
+    "live_codex_connected": true,
+    "duplicate_process_rejected": true,
+    "local_unit_tests_passed": 10,
+    "clippy": "passed with -D warnings",
+    "format": "passed",
+    "tray_interaction_verified": false,
+    "login_start_verified": false
+  },
+  "linux": {
+    "platforms": ["linux-x64", "linux-arm64"],
+    "validation_environment": "GitHub Actions",
+    "user_service_registration_and_removal": true,
+    "user_service_start_and_stop": true,
+    "service_process_owned_by_current_user": true,
+    "application_commands_use_sudo": false,
+    "runner_user_manager_setup_uses_sudo": true,
+    "logout_persistence_verified": false
+  },
+  "github_actions": {
+    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/40809903437",
+    "head_sha": "db48640",
+    "conclusion": "success",
+    "targets": ["linux-x64", "linux-arm64", "macos-arm64", "macos-x64", "windows-x64"],
+    "checks": ["format", "clippy", "unit tests", "release build", "tag and application version match", "autostart registration and removal", "Linux user service startup", "Windows headless startup and duplicate rejection", "release asset publication"],
+    "workflow_actionlint": "passed"
+  },
+  "release": {
+    "tag": "v0.2.2",
+    "url": "https://github.com/AkaakuHub/codex-goal-monitor/releases/tag/v0.2.2",
+    "draft": false,
+    "asset_count": 5
+  }
+}
