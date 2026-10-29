@@ -13,15 +13,21 @@ CodexのGoalを監視し、Capacityエラーや通信切断から自動復旧し
 
 [GitHub Releases](https://github.com/AkaakuHub/codex-goal-monitor/releases/latest)の**Assets**から、お使いのOS用のファイルを取得します。`v`から始まるバージョンタグを付けると、GitHub Actionsで5環境の検証とビルドを行い、すべて成功した場合にReleaseへ公開します。タグとアプリのバージョンが異なる場合は公開しません。開発中のビルドは[GitHub ActionsのBuild](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)の**Artifacts**から取得できます。Artifactsの保持期間は14日です。
 
-| OS | Artifact | 動作 |
+| OS | Releaseのファイル | 動作 |
 | --- | --- | --- |
-| Windows x64 | `codex-goal-monitor-windows-x64` | タスクトレイに常駐します |
-| macOS Apple Silicon | `codex-goal-monitor-macos-arm64` | メニューバーに常駐します |
-| macOS Intel | `codex-goal-monitor-macos-x64` | メニューバーに常駐します |
-| Linux x64 | `codex-goal-monitor-linux-x64` | GUIなしで常駐します |
-| Linux ARM64 | `codex-goal-monitor-linux-arm64` | GUIなしで常駐します |
+| Windows x64 | `codex-goal-monitor-windows-x64-setup.exe` | タスクトレイに常駐します |
+| macOS Apple Silicon | `codex-goal-monitor-macos-arm64.pkg` | メニューバーに常駐します |
+| macOS Intel | `codex-goal-monitor-macos-x64.pkg` | メニューバーに常駐します |
+| Linux x64 | `codex-goal-monitor-linux-x64.tar.gz` | GUIなしで常駐します |
+| Linux ARM64 | `codex-goal-monitor-linux-arm64.tar.gz` | GUIなしで常駐します |
 
-ReleaseのZIPまたは`.tar.gz`を解凍してください。Artifactsから取得した場合は、外側のZIPも解凍してください。Windowsでは`.exe`、macOSでは`.app`、Linuxでは実行ファイルを使用します。macOSの`.app`はApplicationsフォルダへ移動してください。アドホック署名を付けていますが、Appleの公証は行っていません。
+WindowsはセットアップEXEを開きます。管理者権限は不要で、現在のユーザーの`%LOCALAPPDATA%\Programs\Codex Goal Monitor`にインストールし、スタートメニューへ登録します。削除するときはWindowsの「インストールされているアプリ」からアンインストールします。自動起動の登録も削除し、設定ファイルは保持します。
+
+macOSはPKGを開き、インストーラーの案内に従います。管理者権限は不要で、現在のユーザーの`~/Applications/Codex Goal Monitor.app`にインストールします。削除するときはアプリ内で自動起動を解除して終了し、この`.app`をゴミ箱へ移動してください。
+
+更新するときはアプリを終了してから新しいインストーラーを実行します。WindowsのセットアップEXEはコード署名を付けていません。macOSのアプリはアドホック署名のみで、PKGの署名とAppleの公証は行っていません。OSによって初回実行が制限される場合があります。
+
+Linuxは`.tar.gz`を解凍して使用します。ActionsのArtifactsから取得した場合は、外側のZIPを解凍するとインストーラーまたは`.tar.gz`が入っています。
 
 ## はじめに
 
@@ -74,7 +80,7 @@ Windows・macOSも`--headless`またはSSH接続時はGUIなしで動作しま�
 
 Webhook設定後、実行ファイルの配置場所を決めてから登録してください。
 
-Windows・Linuxとも、現在のユーザーのスコープで登録・実行します。Windowsは管理者として実行する必要がなく、ユーザーが書き込めるフォルダへ展開して使用できます。Linuxはsystemdのユーザーマネージャーが動いているログインセッションで、sudoを使わずに登録・開始できます。
+Windows・Linuxとも、現在のユーザーのスコープで登録・実行します。Windowsはインストール・実行ともに管理者権限が不要です。Linuxはsystemdのユーザーマネージャーが動いているログインセッションで、sudoを使わずに登録・開始できます。
 
 ```sh
 ./codex-goal-monitor --config ./settings.json --headless --autostart on

@@ -69,6 +69,7 @@ jobs:
           if ($actual -ne $expected) { throw "バージョンが一致しません。expected=$expected actual=$actual" }
           if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$expected") { throw 'タグとCargoのバージョンが一致しません。' }
           Write-Output "Version: $actual"
+          "APP_VERSION=$expected" >> $env:GITHUB_ENV
       - name: Linux・macOSで自動起動の切り替えを確認
         if: runner.os != 'Windows'
         shell: bash
@@ -140,21 +141,41 @@ jobs:
       - name: macOS用のアプリを作成
         if: runner.os == 'macOS'
         run: |
-          mkdir -p "dist/Codex Goal Monitor.app/Contents/MacOS"
-          cp target/release/codex-goal-monitor "dist/Codex Goal Monitor.app/Contents/MacOS/"
-          cp deploy/macos/Info.plist "dist/Codex Goal Monitor.app/Contents/"
-          test "$(plutil -extract CFBundleShortVersionString raw -o - 'dist/Codex Goal Monitor.app/Contents/Info.plist')" = "$APP_VERSION"
-          test "$(plutil -extract CFBundleVersion raw -o - 'dist/Codex Goal Monitor.app/Contents/Info.plist')" = "$APP_VERSION"
-          codesign --force --deep --sign - "dist/Codex Goal Monitor.app"
-          ditto -c -k --sequesterRsrc --keepParent "dist/Codex Goal Monitor.app" codex-goal-monitor-${{ matrix.target }}.zip
-          mv codex-goal-monitor-${{ matrix.target }}.zip dist/
-          rm -r "dist/Codex Goal Monitor.app"
-      - name: Windows用に圧縮
+          app="target/package/root/Applications/Codex Goal Monitor.app"
+          mkdir -p "$app/Contents/MacOS" dist
+          cp target/release/codex-goal-monitor "$app/Contents/MacOS/"
+          cp deploy/macos/Info.plist "$app/Contents/"
+          test "$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")" = "$APP_VERSION"
+          test "$(plutil -extract CFBundleVersion raw -o - "$app/Contents/Info.plist")" = "$APP_VERSION"
+          codesign --force --deep --sign - "$app"
+          pkgbuild --analyze --root target/package/root target/package/components.plist
+          /usr/libexec/PlistBuddy -c 'Set :0:BundleIsRelocatable false' target/package/components.plist
+          pkgbuild --root target/package/root --component-plist target/package/components.plist --identifier org.akaakuhub.codex-goal-monitor --version "$APP_VERSION" --install-location / target/package/component.pkg
+          sed "s/@VERSION@/$APP_VERSION/g" deploy/macos/Distribution.xml > target/package/Distribution.xml
+          productbuild --distribution target/package/Distribution.xml --package-path target/package dist/codex-goal-monitor-${{ matrix.target }}.pkg
+      - name: macOSでユーザー専用インストールを確認
+        if: runner.os == 'macOS'
+        run: |
+          test "$(id -u)" -ne 0
+          installer -pkg dist/codex-goal-monitor-${{ matrix.target }}.pkg -target CurrentUserHomeDirectory
+          binary="$HOME/Applications/Codex Goal Monitor.app/Contents/MacOS/codex-goal-monitor"
+          test "$("$binary" --version)" = "$APP_VERSION"
+          codesign --verify --deep --strict "$HOME/Applications/Codex Goal Monitor.app"
+          "$binary" --headless --config "$PWD/target/startup check/settings.json" &
+          pid=$!
+          trap 'kill "$pid"' EXIT
+          sleep 2
+          kill -0 "$pid"
+      - name: Windows用インストーラーを作成
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist
-          Compress-Archive target/release/codex-goal-monitor.exe dist/codex-goal-monitor-${{ matrix.target }}.zip
+          & "${env:ProgramFiles(x86)}/Inno Setup 6/ISCC.exe" "/DAppVersion=$env:APP_VERSION" deploy/windows/setup.iss
+          if ($LASTEXITCODE -ne 0) { throw 'インストーラーの生成に失敗しました。' }
+      - name: Windowsでインストール・更新・アンインストールを確認
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: deploy/windows/verify-install.ps1 -Installer "$PWD/dist/codex-goal-monitor-windows-x64-setup.exe" -Version $env:APP_VERSION -WorkDirectory "$PWD/target/install check"
       - uses: actions/upload-artifact@v6
         with:
           name: codex-goal-monitor-${{ matrix.target }}
