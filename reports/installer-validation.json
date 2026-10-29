@@ -1,0 +1,48 @@
+{
+  "validated_at": "2026-10-29",
+  "version": "0.2.3",
+  "windows": {
+    "asset": "codex-goal-monitor-windows-x64-setup.exe",
+    "local_administrator": false,
+    "install_scope": "current user",
+    "installation_directory": "%LOCALAPPDATA%/Programs/Codex Goal Monitor",
+    "checks": [
+      "silent install without elevation",
+      "installed executable version",
+      "Start menu shortcut",
+      "HKCU uninstall entry",
+      "autostart registration points to installed executable",
+      "reinstall preserves settings and autostart registration",
+      "installed executable stays running in headless mode",
+      "uninstall removes executable, shortcut and HKCU entries",
+      "uninstall preserves settings"
+    ],
+    "result": "passed locally and on Windows Server 2022 CI"
+  },
+  "macos": {
+    "assets": ["codex-goal-monitor-macos-arm64.pkg", "codex-goal-monitor-macos-x64.pkg"],
+    "install_scope": "CurrentUserHomeDirectory",
+    "installation_directory": "~/Applications/Codex Goal Monitor.app",
+    "checks": [
+      "PKG generation",
+      "installation as non-root without sudo",
+      "installed executable version",
+      "installed application ad-hoc code signature verification",
+      "installed executable stays running in headless mode"
+    ],
+    "result": "passed on Apple Silicon and Intel macOS 15 CI"
+  },
+  "github_actions": {
+    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/40811200809",
+    "head_sha": "0accbec",
+    "conclusion": "success",
+    "targets": ["linux-x64", "linux-arm64", "macos-arm64", "macos-x64", "windows-x64"],
+    "workflow_actionlint": "passed"
+  },
+  "limitations": {
+    "windows_authenticode_signed": false,
+    "macos_pkg_signed": false,
+    "macos_notarized": false,
+    "installer_gui_interaction_verified": false
+  }
+}
