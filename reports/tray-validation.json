@@ -1,0 +1,44 @@
+{
+  "validated_at": "2026-10-29",
+  "version": "0.2.4",
+  "windows": {
+    "administrator": false,
+    "installer_test_used_isolated_app_id_and_directory": true,
+    "checks": [
+      "install, reinstall and uninstall",
+      "installed executable version and Start menu shortcut",
+      "headless startup",
+      "first-run tray remains running with no webhook configured",
+      "first-run settings.json is created",
+      "first-run tray does not launch mshta.exe",
+      "autostart registration and removal with empty webhook configuration",
+      "settings preserved after uninstall"
+    ],
+    "local_unit_tests_passed": 10,
+    "clippy": "passed with -D warnings",
+    "format": "passed",
+    "tray_menu_clicks_verified": false,
+    "tray_menu_verification_limitation": "The computer-use tool did not expose the notification area as a targetable window."
+  },
+  "icon": {
+    "source": "assets/icons/app.svg",
+    "windows": "ICO embedded in the executable and setup installer",
+    "macos": "ICNS in app bundle; template icon in menu bar",
+    "macos_iconutil_validation": "passed on Apple Silicon and Intel"
+  },
+  "github_actions": {
+    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/40813995411",
+    "head_sha": "e25b8b1",
+    "conclusion": "success",
+    "targets": ["linux-x64", "linux-arm64", "macos-arm64", "macos-x64", "windows-x64"],
+    "production_installer_checks": "passed",
+    "workflow_actionlint": "passed",
+    "main_push_trigger": false,
+    "remaining_triggers": ["v* tag push", "pull request", "workflow dispatch"]
+  },
+  "release": {
+    "tag": "v0.2.4",
+    "url": "https://github.com/AkaakuHub/codex-goal-monitor/releases/tag/v0.2.4",
+    "asset_count": 5
+  }
+}
