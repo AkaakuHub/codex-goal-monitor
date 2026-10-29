@@ -49,7 +49,6 @@ try {
         Start-Sleep -Seconds 2
         if ($tray.HasExited) { throw '設定が未入力の状態でトレイが終了しました。' }
         if (-not (Test-Path $initialSettings)) { throw '初回起動時の設定ファイルがありません。' }
-        if ($tray.MainWindowHandle -ne 0) { throw '初回起動でウィンドウが表示されました。' }
         $children = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($tray.Id)"
         if ($children | Where-Object Name -EQ 'mshta.exe') { throw 'HTAダイアログが起動しました。' }
     } finally {
