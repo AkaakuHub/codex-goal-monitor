@@ -14,6 +14,7 @@ OutputBaseFilename=codex-goal-monitor-windows-x64-setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\..\assets\icons\app.ico
 UninstallDisplayIcon={app}\codex-goal-monitor.exe
 
 [Languages]

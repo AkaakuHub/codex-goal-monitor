@@ -43,6 +43,18 @@ try {
     } finally {
         if (-not $monitor.HasExited) { Stop-Process -Id $monitor.Id }
     }
+    $initialSettings = Join-Path (Resolve-Path $WorkDirectory) 'first run/settings.json'
+    $tray = Start-Process $binary -ArgumentList '--config', "`"$initialSettings`"" -WindowStyle Hidden -PassThru
+    try {
+        Start-Sleep -Seconds 2
+        if ($tray.HasExited) { throw '設定が未入力の状態でトレイが終了しました。' }
+        if (-not (Test-Path $initialSettings)) { throw '初回起動時の設定ファイルがありません。' }
+        if ($tray.MainWindowHandle -ne 0) { throw '初回起動でウィンドウが表示されました。' }
+        $children = Get-CimInstance Win32_Process -Filter "ParentProcessId=$($tray.Id)"
+        if ($children | Where-Object Name -EQ 'mshta.exe') { throw 'HTAダイアログが起動しました。' }
+    } finally {
+        if (-not $tray.HasExited) { Stop-Process -Id $tray.Id }
+    }
 } finally {
     if (Test-Path $uninstaller) {
         Invoke-CheckedProcess $uninstaller @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')
@@ -53,4 +65,4 @@ if (Test-Path $shortcut) { throw 'ショートカットが削除されていま�
 if (Test-Path $uninstallKey) { throw 'アンインストール登録が削除されていません。' }
 if ((Get-Item $runKey).GetValue('Codex Goal Monitor')) { throw '自動起動登録が削除されていません。' }
 if (-not (Test-Path $settings)) { throw '設定ファイルが削除されました。' }
-Write-Output 'PASS: install, upgrade, version, shortcut, HKCU, headless startup, uninstall, settings preserved'
+Write-Output 'PASS: install, upgrade, version, shortcut, HKCU, headless startup, first-run tray without dialogs, uninstall, settings preserved'

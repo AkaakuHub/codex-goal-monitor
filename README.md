@@ -34,8 +34,8 @@ Linuxは`.tar.gz`を解凍して使用します。ActionsのArtifactsから取�
 必要なものは、**Codex CLIのローカル共有app-server**と**Discord Webhook URL**です。Codex CLI 0.163.0で動作を検証しています。
 
 1. Codexを通常どおり`codex`で起動します。
-2. Windows・macOSではアプリを起動し、Webhook URLと送信元ラベルを入力します。
-3. 自動起動する場合は、トレイの「ログイン時に自動起動」にチェックを入れます。
+2. Windows・macOSではアプリを起動し、トレイの「設定ファイルを開く」からJSONの`webhook_url`と`sender_label`を編集して保存します。初回起動時に設定ファイルを作成します。入力ダイアログや設定画面はありません。
+3. トレイの「設定を再読み込み」を選ぶと監視を開始します。自動起動する場合は「ログイン時に自動起動」にチェックを入れます。「終了」でアプリを終了します。
 
 `--no-daemon`や独自の`--remote`接続は監視対象外です。WSLではLinux版を使ってください。カスタムの`CODEX_HOME`を使う場合は、Codexと監視アプリで同じ絶対パスを指定します。
 
@@ -62,7 +62,7 @@ Windows・macOSも`--headless`またはSSH接続時はGUIなしで動作しま�
 
 | 項目 | 内容 |
 | --- | --- |
-| `webhook_url` | Discordの通知先です。設定画面では入力を隠し、空欄で確定すると現在の値を保持します |
+| `webhook_url` | Discordの通知先です。設定ファイルへURLを記入します。未入力の場合は監視を開始しません |
 | `sender_label` | 通知の送信者名と本文に表示する、1〜80文字のラベルです |
 | `autostart` | 自動起動の設定です。既定値は`false`です。トレイまたは下記のコマンドから変更します |
 
@@ -74,11 +74,11 @@ Windows・macOSも`--headless`またはSSH接続時はGUIなしで動作しま�
 | macOS | `~/Library/Application Support/codex-goal-monitor/settings.json` |
 | Linux | `~/.config/codex-goal-monitor/settings.json`。`XDG_CONFIG_HOME`設定時はその配下です |
 
-`--config`で保存先を指定できます。トレイからの変更は保存時に反映されます。headless環境でファイルを編集した場合は再起動してください。同じ設定での多重起動は防止します。
+`--config`で保存先を指定できます。ファイルを編集したらトレイの「設定を再読み込み」を選びます。設定が不正な場合は監視を停止し、トレイメニューにエラーを表示します。headless環境では編集後に再起動してください。同じ設定での多重起動は防止します。
 
 ### 自動起動
 
-Webhook設定後、実行ファイルの配置場所を決めてから登録してください。
+インストール後、または実行ファイルの配置場所を決めてから登録してください。Webhook URLが未入力でも登録できます。
 
 Windows・Linuxとも、現在のユーザーのスコープで登録・実行します。Windowsはインストール・実行ともに管理者権限が不要です。Linuxはsystemdのユーザーマネージャーが動いているログインセッションで、sudoを使わずに登録・開始できます。
 
@@ -111,7 +111,7 @@ Windows・macOSでは次回ログイン時に起動します。Linuxでは登録
 
 ## アイコンとバージョン
 
-トレイには`tray-icon`の`NativeIcon::Info`を指定しています。WindowsはOS標準の`SIID_INFO`、macOSは`NSImageNameInfo`を表示します。独自の画像は作成しておらず、`.exe`・`.app`用の専用アイコンも未設定です。Linuxにはトレイアイコンがありません。
+専用アイコンの元データは[SVG](assets/icons/app.svg)です。Windowsの実行ファイル・セットアップEXE、macOSのアプリ、トレイに使用します。macOSのメニューバーではOSが外観に合わせて色を調整します。Linuxにはトレイアイコンがありません。アイコンの再生成にはImageMagickと`python assets/icons/generate.py`を使用します。
 
 アプリのバージョンはCargoの定義から埋め込み、トレイの先頭と`--version`で表示します。macOSのアプリ情報と実行ファイルのバージョンの一致もCIで確認します。
 

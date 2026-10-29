@@ -145,6 +145,9 @@ jobs:
           mkdir -p "$app/Contents/MacOS" dist
           cp target/release/codex-goal-monitor "$app/Contents/MacOS/"
           cp deploy/macos/Info.plist "$app/Contents/"
+          mkdir -p "$app/Contents/Resources"
+          cp assets/icons/app.icns "$app/Contents/Resources/"
+          iconutil -c iconset "$app/Contents/Resources/app.icns" -o target/package/iconcheck.iconset
           test "$(plutil -extract CFBundleShortVersionString raw -o - "$app/Contents/Info.plist")" = "$APP_VERSION"
           test "$(plutil -extract CFBundleVersion raw -o - "$app/Contents/Info.plist")" = "$APP_VERSION"
           codesign --force --deep --sign - "$app"

@@ -55,13 +55,16 @@ impl Settings {
     pub fn load(path: &Path) -> Result<Self> {
         match fs::read(path) {
             Ok(data) => serde_json::from_slice(&data).context("設定ファイルを読み込めません。"),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(Self::default()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                let settings = Self::default();
+                settings.save(path)?;
+                Ok(settings)
+            }
             Err(error) => Err(error).context("設定ファイルを読み込めません。"),
         }
     }
 
     pub fn save(&self, path: &Path) -> Result<()> {
-        self.validate()?;
         if path.exists() && Self::load(path)? == *self {
             return Ok(());
         }

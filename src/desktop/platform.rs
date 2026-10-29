@@ -1,12 +1,26 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    process::Command,
+    sync::Arc,
+};
 
 use anyhow::Result;
 use tray_icon::menu::MenuEvent;
 
 use super::{App, Event};
-use crate::config::Settings;
 
-pub fn run(settings: Settings, path: PathBuf) -> Result<()> {
+pub fn open_config(path: &Path) -> Result<()> {
+    #[cfg(target_os = "windows")]
+    Command::new("notepad.exe").arg(path).spawn()?;
+    #[cfg(target_os = "macos")]
+    anyhow::ensure!(
+        Command::new("open").arg("-t").arg(path).status()?.success(),
+        "設定ファイルを開けません。"
+    );
+    Ok(())
+}
+
+pub fn run(path: PathBuf) -> Result<()> {
     use tao::{
         event::{Event as NativeEvent, StartCause},
         event_loop::{ControlFlow, EventLoopBuilder},
@@ -31,14 +45,10 @@ pub fn run(settings: Settings, path: PathBuf) -> Result<()> {
         *control = ControlFlow::Wait;
         match event {
             NativeEvent::NewEvents(StartCause::Init) => {
-                match App::new(settings.clone(), path.clone(), send.clone()) {
+                match App::new(path.clone(), send.clone()) {
                     Ok(created) => app = Some(created),
                     Err(error) => {
-                        tinyfiledialogs::message_box_ok(
-                            "起動できません",
-                            &error.to_string(),
-                            tinyfiledialogs::MessageBoxIcon::Error,
-                        );
+                        eprintln!("{error:#}");
                         *control = ControlFlow::Exit;
                     }
                 }

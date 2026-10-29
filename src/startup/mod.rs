@@ -23,7 +23,6 @@ pub use platform::enabled;
 pub fn configure(settings: &mut Settings, path: &Path, enabled: bool) -> Result<()> {
     let mut updated = settings.clone();
     updated.autostart = enabled;
-    updated.validate()?;
     let previous = platform::enabled()?;
     platform::set(path, enabled).context("自動起動の登録を変更できません。")?;
     if let Err(error) = updated.save(path) {
