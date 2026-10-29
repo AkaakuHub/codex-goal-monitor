@@ -129,6 +129,8 @@ GitHub Actionsでは5環境でテスト・リリースビルド・バージョ�
 
 [インストーラーの検証記録](reports/installer-validation.json)には、Windowsの非管理者権限でのインストール・更新・アンインストールと、macOSのApple Silicon・Intelでのユーザー専用PKGのインストール・起動を確認した結果を保存しています。
 
+[v0.2.3のRelease](https://github.com/AkaakuHub/codex-goal-monitor/releases/tag/v0.2.3)には、タグ付きビルドで生成したWindowsのセットアップEXE、macOSのPKG2種類、Linuxのアーカイブ2種類を公開しています。
+
 [ユーザースコープの検証記録](reports/user-scope-validation.json)には、ReleaseのWindows版を非管理者権限で起動し、実際のCodexへの接続・多重起動の拒否・自動起動の登録と解除を確認した結果を保存しています。Linuxのx64・ARM64では、CIでユーザーサービスを起動・停止し、プロセスが現在のユーザーの所有であることを確認しています。
 
 [検証記録](reports/native-validation.json)にはLinux ARM64での測定とCIの実行先を保存しています。v0.2.1の実行ファイルは約1.9MB、待機時メモリは約3.3MiBです。5秒間の計測ではCPU時間の増分は0.00秒、ディスク読み書きは0バイトでした。

@@ -4,6 +4,7 @@
   "windows": {
     "asset": "codex-goal-monitor-windows-x64-setup.exe",
     "local_administrator": false,
+    "tag_build_installer_verified_locally": true,
     "install_scope": "current user",
     "installation_directory": "%LOCALAPPDATA%/Programs/Codex Goal Monitor",
     "checks": [
@@ -38,6 +39,14 @@
     "conclusion": "success",
     "targets": ["linux-x64", "linux-arm64", "macos-arm64", "macos-x64", "windows-x64"],
     "workflow_actionlint": "passed"
+  },
+  "release": {
+    "tag": "v0.2.3",
+    "url": "https://github.com/AkaakuHub/codex-goal-monitor/releases/tag/v0.2.3",
+    "run_url": "https://github.com/AkaakuHub/codex-goal-monitor/actions/runs/40811469007",
+    "publication_attempt": 2,
+    "conclusion": "success",
+    "asset_count": 5
   },
   "limitations": {
     "windows_authenticode_signed": false,
