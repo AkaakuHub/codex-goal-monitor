@@ -11,7 +11,7 @@ CodexのGoalを監視し、Capacityエラーや通信切断から自動復旧し
 
 ## ダウンロード
 
-[GitHub ActionsのBuild](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)で、最新の成功した実行の**Artifacts**から取得します。保持期間は14日です。
+[GitHub Releases](https://github.com/AkaakuHub/codex-goal-monitor/releases/latest)の**Assets**から、お使いのOS用のファイルを取得します。`v`から始まるバージョンタグを付けると、GitHub Actionsで5環境の検証とビルドを行い、すべて成功した場合にReleaseへ公開します。タグとアプリのバージョンが異なる場合は公開しません。開発中のビルドは[GitHub ActionsのBuild](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)の**Artifacts**から取得できます。Artifactsの保持期間は14日です。
 
 | OS | Artifact | 動作 |
 | --- | --- | --- |
@@ -21,7 +21,7 @@ CodexのGoalを監視し、Capacityエラーや通信切断から自動復旧し
 | Linux x64 | `codex-goal-monitor-linux-x64` | GUIなしで常駐します |
 | Linux ARM64 | `codex-goal-monitor-linux-arm64` | GUIなしで常駐します |
 
-ArtifactsのZIPを解凍し、中のZIPまたは`.tar.gz`も解凍してください。Windowsでは`.exe`、macOSでは`.app`、Linuxでは実行ファイルを使用します。macOSの`.app`はApplicationsフォルダへ移動してください。アドホック署名を付けていますが、Appleの公証は行っていません。
+ReleaseのZIPまたは`.tar.gz`を解凍してください。Artifactsから取得した場合は、外側のZIPも解凍してください。Windowsでは`.exe`、macOSでは`.app`、Linuxでは実行ファイルを使用します。macOSの`.app`はApplicationsフォルダへ移動してください。アドホック署名を付けていますが、Appleの公証は行っていません。
 
 ## はじめに
 
@@ -73,6 +73,8 @@ Windows・macOSも`--headless`またはSSH接続時はGUIなしで動作しま�
 ### 自動起動
 
 Webhook設定後、実行ファイルの配置場所を決めてから登録してください。
+
+Windows・Linuxとも、現在のユーザーのスコープで登録・実行します。Windowsは管理者として実行する必要がなく、ユーザーが書き込めるフォルダへ展開して使用できます。Linuxはsystemdのユーザーマネージャーが動いているログインセッションで、sudoを使わずに登録・開始できます。
 
 ```sh
 ./codex-goal-monitor --config ./settings.json --headless --autostart on

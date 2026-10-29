@@ -54,6 +54,7 @@ jobs:
           expected=$(cargo +stable metadata --no-deps --format-version 1 | python3 -c 'import json,sys; print(next(p["version"] for p in json.load(sys.stdin)["packages"] if p["name"] == "codex-goal-monitor"))')
           actual=$(target/release/codex-goal-monitor --version)
           test "$actual" = "$expected"
+          if [ "$GITHUB_REF_TYPE" = tag ]; then test "$GITHUB_REF_NAME" = "v$expected"; fi
           echo "Version: $actual"
           echo "APP_VERSION=$expected" >> "$GITHUB_ENV"
       - name: Windowsで起動とバージョンを確認
@@ -62,10 +63,11 @@ jobs:
         run: |
           $metadata = cargo +stable metadata --no-deps --format-version 1 | ConvertFrom-Json
           $expected = ($metadata.packages | Where-Object name -EQ 'codex-goal-monitor').version
-          $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--version' -RedirectStandardOutput target/version.txt -RedirectStandardError target/version-error.txt -Wait -PassThru
+          $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--version' -WindowStyle Hidden -RedirectStandardOutput target/version.txt -RedirectStandardError target/version-error.txt -Wait -PassThru
           if ($process.ExitCode -ne 0) { throw (Get-Content target/version-error.txt -Raw) }
           $actual = (Get-Content target/version.txt -Raw).Trim()
           if ($actual -ne $expected) { throw "バージョンが一致しません。expected=$expected actual=$actual" }
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$expected") { throw 'タグとCargoのバージョンが一致しません。' }
           Write-Output "Version: $actual"
       - name: Linux・macOSで自動起動の切り替えを確認
         if: runner.os != 'Windows'
@@ -83,6 +85,13 @@ jobs:
           if [ "$RUNNER_OS" = Linux ]; then
             systemctl --user is-enabled --quiet codex-goal-monitor.service
             systemd-analyze --user verify "$HOME/.config/systemd/user/codex-goal-monitor.service"
+            trap 'systemctl --user stop codex-goal-monitor.service' EXIT
+            systemctl --user start codex-goal-monitor.service
+            sleep 2
+            systemctl --user is-active --quiet codex-goal-monitor.service
+            pid=$(systemctl --user show -p MainPID --value codex-goal-monitor.service)
+            test "$(stat -c %u "/proc/$pid")" = "$(id -u)"
+            systemctl --user stop codex-goal-monitor.service
           else
             plutil -lint "$HOME/Library/LaunchAgents/org.akaakuhub.codex-goal-monitor.plist"
           fi
@@ -101,13 +110,27 @@ jobs:
           New-Item -ItemType Directory -Force (Split-Path $settings)
           '{"webhook_url":"https://discord.com/api/webhooks/123/test","sender_label":"CI","autostart":false}' | Set-Content $settings
           foreach ($mode in @('on', 'off')) {
-            $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--headless', '--config', "`"$settings`"", '--autostart', $mode -Wait -PassThru
+            $process = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--headless', '--config', "`"$settings`"", '--autostart', $mode -WindowStyle Hidden -Wait -PassThru
             if ($process.ExitCode -ne 0) { throw "自動起動の${mode}に失敗しました。" }
             $saved = Get-Content $settings -Raw | ConvertFrom-Json
             if ($saved.autostart -ne ($mode -eq 'on')) { throw '自動起動の設定が保存されていません。' }
             $key = Get-Item 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
             $registered = $key.GetValue('Codex Goal Monitor')
             if (($null -ne $registered) -ne ($mode -eq 'on')) { throw '自動起動の登録状態が正しくありません。' }
+          }
+          $monitor = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--headless', '--config', "`"$settings`"" -WindowStyle Hidden -RedirectStandardError target/monitor-error.txt -PassThru
+          try {
+            Start-Sleep -Seconds 2
+            if ($monitor.HasExited) { throw (Get-Content target/monitor-error.txt -Raw) }
+            $duplicate = Start-Process target/release/codex-goal-monitor.exe -ArgumentList '--headless', '--config', "`"$settings`"" -WindowStyle Hidden -RedirectStandardError target/duplicate-error.txt -PassThru
+            try {
+              if (-not $duplicate.WaitForExit(10000)) { throw '多重起動が終了しません。' }
+              if ($duplicate.ExitCode -eq 0) { throw '多重起動が拒否されません。' }
+            } finally {
+              if (-not $duplicate.HasExited) { Stop-Process -Id $duplicate.Id }
+            }
+          } finally {
+            if (-not $monitor.HasExited) { Stop-Process -Id $monitor.Id }
           }
       - name: Linux用に圧縮
         if: runner.os == 'Linux'
@@ -138,3 +161,22 @@ jobs:
           path: dist/*
           if-no-files-found: error
           retention-days: 14
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: codex-goal-monitor-*
+          path: dist
+          merge-multiple: true
+      - name: ビルド成果物をReleaseへ公開
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" dist/* --verify-tag --title "$RELEASE_TAG" --generate-notes
