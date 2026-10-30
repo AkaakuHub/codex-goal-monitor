@@ -53,8 +53,8 @@ fn run() -> Result<()> {
         builder.mode(0o700);
     }
     builder.create(directory)?;
-    let mut settings = config::Settings::load(&path)?;
     if let Some(action) = autostart {
+        let mut settings = config::Settings::load(&path)?;
         match action.to_str() {
             Some("on") => startup::configure(&mut settings, &path, true)?,
             Some("off") => startup::configure(&mut settings, &path, false)?,
@@ -77,8 +77,9 @@ fn run() -> Result<()> {
         .context("同じ設定のCodex Goal Monitorがすでに起動しています。")?;
     #[cfg(not(target_os = "linux"))]
     if !without_gui() {
-        return desktop::run(settings, path);
+        return desktop::run(path);
     }
+    let settings = config::Settings::load(&path)?;
     settings.validate()?;
     monitor::headless(settings)
 }
@@ -95,14 +96,6 @@ fn main() -> std::process::ExitCode {
         Ok(()) => std::process::ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("{error:#}");
-            #[cfg(not(target_os = "linux"))]
-            if !without_gui() {
-                tinyfiledialogs::message_box_ok(
-                    "Codex Goal Monitor",
-                    &format!("{error:#}"),
-                    tinyfiledialogs::MessageBoxIcon::Error,
-                );
-            }
             std::process::ExitCode::FAILURE
         }
     }

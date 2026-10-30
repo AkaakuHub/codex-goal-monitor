@@ -95,8 +95,6 @@ async fn run(mut settings: watch::Receiver<Option<Settings>>, status: Status) ->
             } else {
                 status("Codexの起動を待っています。".into());
             }
-        } else {
-            status("設定からDiscord Webhook URLを入力してください。".into());
         }
         tokio::select! {
             changed = settings.changed() => { if changed.is_err() { break; } }

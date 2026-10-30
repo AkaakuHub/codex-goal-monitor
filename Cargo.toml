@@ -1,6 +1,7 @@
 [package]
 name = "codex-goal-monitor"
-version = "0.2.1"
+version = "0.2.4"
+build = "deploy/windows/build.rs"
 edition = "2024"
 rust-version = "1.90"
 
@@ -17,12 +18,14 @@ uds-compat = "0.1"
 ureq = { version = "3.5", default-features = false, features = ["rustls", "json"] }
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
-tinyfiledialogs = "3.9"
 tao = { version = "0.37", default-features = false }
 tray-icon = { version = "0.26", default-features = false }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-registry = "0.6"
+
+[target.'cfg(target_os = "windows")'.build-dependencies]
+winresource = "0.1"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 plist = { version = "1", default-features = false }
