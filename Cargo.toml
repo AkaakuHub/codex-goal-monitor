@@ -1,6 +1,6 @@
 [package]
 name = "codex-goal-monitor"
-version = "0.2.4"
+version = "0.2.5"
 build = "deploy/windows/build.rs"
 edition = "2024"
 rust-version = "1.90"
