@@ -29,12 +29,12 @@ pub struct Turn {
 }
 
 impl Turn {
-    pub fn retryable(&self, goal: &Goal, now: u64) -> bool {
+    pub fn retryable(&self, goal: Option<&Goal>, now: u64) -> bool {
         let (Some(started), Some(completed)) = (self.started_at, self.completed_at) else {
             return false;
         };
         if self.status != "failed"
-            || started < goal.created_at
+            || goal.is_some_and(|goal| started < goal.created_at)
             || completed < started
             || completed > now
             || now - completed > 1800
@@ -97,21 +97,22 @@ pub struct Recovery {
 }
 
 impl Recovery {
-    pub fn schedule(&mut self, turn: &Turn, goal: &Goal, now: u64) -> bool {
+    pub fn schedule(&mut self, turn: &Turn, goal: Option<&Goal>, now: u64) -> bool {
         if self.phase == Phase::Halted
-            || goal.status != "blocked"
+            || goal.is_some_and(|goal| goal.status != "blocked")
             || turn.id == self.last_turn
             || !turn.retryable(goal, now)
         {
             return false;
         }
-        if self.attempt > 0 && goal.tokens_used > self.baseline {
+        let tokens_used = goal.map_or(0, |goal| goal.tokens_used);
+        if self.attempt > 0 && tokens_used > self.baseline {
             self.wasted += 1;
         }
         self.last_turn.clone_from(&turn.id);
         self.error_time = turn.completed_at.unwrap();
-        self.baseline = goal.tokens_used;
-        if self.wasted >= 5 {
+        self.baseline = tokens_used;
+        if self.wasted >= 5 || (goal.is_none() && self.attempt >= 5) {
             self.phase = Phase::Halted;
             return false;
         }
@@ -121,9 +122,9 @@ impl Recovery {
         true
     }
 
-    pub fn eligible(&self, goal: &Goal, now: u64) -> bool {
+    pub fn eligible(&self, goal: Option<&Goal>, now: u64) -> bool {
         self.phase == Phase::Waiting
-            && goal.status == "blocked"
+            && goal.is_none_or(|goal| goal.status == "blocked")
             && now >= self.due
             && now <= self.error_time + 1800
     }

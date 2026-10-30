@@ -28,7 +28,7 @@ fn only_capacity_and_stream_errors_are_retryable() {
     ] {
         let mut turn = failed("error");
         turn.error = Some(json!({"message": "", "codexErrorInfo": info}));
-        assert!(turn.retryable(&goal(), 110));
+        assert!(turn.retryable(Some(&goal()), 110));
     }
     for info in [
         "other",
@@ -38,12 +38,12 @@ fn only_capacity_and_stream_errors_are_retryable() {
     ] {
         let mut turn = failed("error");
         turn.error = Some(json!({"codexErrorInfo": info}));
-        assert!(!turn.retryable(&goal(), 110));
+        assert!(!turn.retryable(Some(&goal()), 110));
     }
     for status in ["inProgress", "interrupted", "completed"] {
         let mut turn = failed("error");
         turn.status = status.into();
-        assert!(!turn.retryable(&goal(), 110));
+        assert!(!turn.retryable(Some(&goal()), 110));
     }
 }
 
@@ -53,15 +53,15 @@ fn remote_compaction_stream_error_is_retryable() {
     turn.error = Some(
         json!({"message": "Error running remote compact task: stream disconnected before completion: connection reset"}),
     );
-    assert!(turn.retryable(&goal(), 110));
+    assert!(turn.retryable(Some(&goal()), 110));
 }
 
 #[test]
 fn a_long_turn_uses_its_completion_time_for_error_age() {
     let mut turn = failed("long");
     turn.completed_at = Some(4000);
-    assert!(turn.retryable(&goal(), 4001));
-    assert!(!turn.retryable(&goal(), 5801));
+    assert!(turn.retryable(Some(&goal()), 4001));
+    assert!(!turn.retryable(Some(&goal()), 5801));
 }
 
 #[test]
@@ -69,9 +69,9 @@ fn stale_future_and_previous_goal_errors_are_rejected() {
     let mut turn = failed("error");
     for started in [89, 111] {
         turn.started_at = Some(started);
-        assert!(!turn.retryable(&goal(), 110));
+        assert!(!turn.retryable(Some(&goal()), 110));
     }
-    assert!(!failed("error").retryable(&goal(), 1901));
+    assert!(!failed("error").retryable(Some(&goal()), 1901));
 }
 
 #[test]
@@ -79,9 +79,9 @@ fn retries_back_off_and_deduplicate_failed_turns() {
     let mut recovery = Recovery::default();
     for (index, delay) in [30, 60, 120, 300, 600, 600].iter().enumerate() {
         let turn = failed(&index.to_string());
-        assert!(recovery.schedule(&turn, &goal(), 110));
+        assert!(recovery.schedule(&turn, Some(&goal()), 110));
         assert_eq!(recovery.due, 110 + delay);
-        assert!(!recovery.schedule(&turn, &goal(), 110));
+        assert!(!recovery.schedule(&turn, Some(&goal()), 110));
         assert_eq!(recovery.attempt, index + 1);
     }
 }
@@ -89,10 +89,10 @@ fn retries_back_off_and_deduplicate_failed_turns() {
 #[test]
 fn paused_complete_and_limited_goals_are_never_resumed() {
     let mut recovery = Recovery::default();
-    recovery.schedule(&failed("error"), &goal(), 110);
-    assert!(!recovery.eligible(&goal(), 139));
-    assert!(recovery.eligible(&goal(), 140));
-    assert!(!recovery.eligible(&goal(), 1911));
+    recovery.schedule(&failed("error"), Some(&goal()), 110);
+    assert!(!recovery.eligible(Some(&goal()), 139));
+    assert!(recovery.eligible(Some(&goal()), 140));
+    assert!(!recovery.eligible(Some(&goal()), 1911));
     for status in [
         "active",
         "paused",
@@ -104,8 +104,8 @@ fn paused_complete_and_limited_goals_are_never_resumed() {
             status: status.into(),
             ..goal()
         };
-        assert!(!recovery.eligible(&goal, 140));
-        assert!(!Recovery::default().schedule(&failed("error"), &goal, 110));
+        assert!(!recovery.eligible(Some(&goal), 140));
+        assert!(!Recovery::default().schedule(&failed("error"), Some(&goal), 110));
     }
 }
 
@@ -113,7 +113,7 @@ fn paused_complete_and_limited_goals_are_never_resumed() {
 fn capacity_without_token_consumption_keeps_retrying() {
     let mut recovery = Recovery::default();
     for index in 0..20 {
-        assert!(recovery.schedule(&failed(&index.to_string()), &goal(), 110));
+        assert!(recovery.schedule(&failed(&index.to_string()), Some(&goal()), 110));
     }
     assert_eq!(recovery.wasted, 0);
 }
@@ -121,14 +121,14 @@ fn capacity_without_token_consumption_keeps_retrying() {
 #[test]
 fn five_token_consuming_failed_resumes_stop() {
     let mut recovery = Recovery::default();
-    assert!(recovery.schedule(&failed("initial"), &goal(), 110));
+    assert!(recovery.schedule(&failed("initial"), Some(&goal()), 110));
     for index in 1..=5 {
         let goal = Goal {
             tokens_used: 100 + index,
             ..goal()
         };
         assert_eq!(
-            recovery.schedule(&failed(&index.to_string()), &goal, 110),
+            recovery.schedule(&failed(&index.to_string()), Some(&goal), 110),
             index < 5
         );
     }
@@ -158,4 +158,46 @@ fn only_a_new_completed_turn_confirms_recovery() {
         (recovery.attempt, recovery.wasted, recovery.phase),
         (0, 0, Phase::Watching)
     );
+}
+
+#[test]
+fn capacity_and_stream_failures_without_a_goal_are_retried() {
+    for info in [
+        json!("serverOverloaded"),
+        json!({"responseStreamDisconnected": {"httpStatusCode": 500}}),
+    ] {
+        let mut recovery = Recovery::default();
+        let mut turn = failed("initial");
+        turn.error = Some(json!({"codexErrorInfo": info}));
+        assert!(recovery.schedule(&turn, None, 110));
+        assert!(!recovery.schedule(&turn, None, 110));
+        assert!(!recovery.eligible(None, 139));
+        assert!(recovery.eligible(None, 140));
+        assert!(!recovery.eligible(None, 1901));
+    }
+}
+
+#[test]
+fn five_failed_resumes_without_a_goal_stop() {
+    let mut recovery = Recovery::default();
+    for index in 0..=5 {
+        assert_eq!(
+            recovery.schedule(&failed(&index.to_string()), None, 110),
+            index < 5
+        );
+    }
+    assert_eq!(recovery.phase, Phase::Halted);
+}
+
+#[test]
+fn manual_stops_usage_limits_and_stale_errors_without_a_goal_are_not_retried() {
+    for status in ["interrupted", "completed", "inProgress"] {
+        let mut turn = failed("turn");
+        turn.status = status.into();
+        assert!(!Recovery::default().schedule(&turn, None, 110));
+    }
+    let mut turn = failed("turn");
+    turn.error = Some(json!({"codexErrorInfo": "usageLimitExceeded"}));
+    assert!(!Recovery::default().schedule(&turn, None, 110));
+    assert!(!Recovery::default().schedule(&failed("old"), None, 1901));
 }

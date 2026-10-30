@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml/badge.svg)](https://github.com/AkaakuHub/codex-goal-monitor/actions/workflows/build.yml)
 
-CodexのGoalを監視し、Capacityエラーや通信切断から自動復旧してDiscordへ通知する、Rust製の常駐アプリです。
+CodexのCapacityエラーや通信切断から作業を自動再開し、Discordへ通知する、Rust製の常駐アプリです。
 
 - **Windows・macOS・Linuxに対応**。通常のターミナルとtmuxの両方を監視します。
 - **イベントで監視**。定期ポーリング、ログの走査、監視状態の定期保存は行いません。
@@ -94,6 +94,8 @@ Windows・macOSでは次回ログイン時に起動します。Linuxでは登録
 
 ## 復旧と通知
 
+- Goalがないスレッドも監視し、直近30分以内のCapacityエラー・HTTP429・ストリーム切断から再開します。接続時とスレッドの停止時に確認し、同じ失敗に対して重複操作しません。
+- Goalなしの場合は、再開直前に最新ターンが同じ失敗のままであることを確認し、`continue`を送ります。復旧後も失敗する状態が5回続くと停止します。
 - 同じGoalが`blocked`で、直近の失敗がCapacityエラー・HTTP429・ストリーム切断の場合だけ再開します。再開直前にも状態を確認します。
 - 再試行の待機時間は30・60・120・300・600秒です。トークンを消費する復旧失敗が5回続くと停止します。消費のないCapacityエラーは回数だけで停止しません。
 - 手動停止、Goal完了、利用上限、予算上限では再開しません。

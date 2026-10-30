@@ -36,7 +36,7 @@ impl Client {
         Self::from_stream(socket).await
     }
 
-    async fn from_stream(socket: UnixStream) -> Result<Self> {
+    pub(super) async fn from_stream(socket: UnixStream) -> Result<Self> {
         let (socket, _) = tokio::time::timeout(
             Duration::from_secs(10),
             tokio_tungstenite::client_async_with_config(
