@@ -27,6 +27,9 @@ impl Default for Settings {
 
 impl Settings {
     pub fn validate(&self) -> Result<()> {
+        if self.webhook_url.is_empty() {
+            return Ok(());
+        }
         let path = self
             .webhook_url
             .strip_prefix("https://discord.com/api/webhooks/")
@@ -98,3 +101,6 @@ pub fn socket_path() -> Result<PathBuf> {
     };
     Ok(home.join("app-server-control/app-server-control.sock"))
 }
+
+#[cfg(test)]
+mod tests;

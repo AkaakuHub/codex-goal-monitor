@@ -10,6 +10,26 @@ use serde_json::Value;
 use super::*;
 
 #[test]
+fn an_unconfigured_webhook_is_skipped_without_errors_or_retries() {
+    let (status, received) = mpsc::channel();
+    let sender = start(Arc::new(move |message| status.send(message).unwrap()));
+    sender
+        .send(Notification {
+            settings: Settings::default(),
+            thread: "test-thread".into(),
+            title: "Codex Goal Completed",
+            detail: "Goalが完了しました。",
+        })
+        .unwrap();
+    drop(sender);
+
+    assert_eq!(
+        received.recv_timeout(Duration::from_secs(3)),
+        Err(mpsc::RecvTimeoutError::Disconnected)
+    );
+}
+
+#[test]
 fn a_rate_limited_webhook_is_retried_with_the_sender_label_and_mentions_disabled() {
     let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let address = listener.local_addr().unwrap();

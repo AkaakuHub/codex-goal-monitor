@@ -24,6 +24,9 @@ pub fn start(status: Status) -> SyncSender<Notification> {
         let agent = ureq::Agent::new_with_config(config);
         for notification in receiver {
             let settings = notification.settings;
+            if settings.webhook_url.is_empty() {
+                continue;
+            }
             let payload = json!({
                 "content": format!("{}\nSource: {}\nThread: {}\n{}", notification.title, settings.sender_label, notification.thread, notification.detail),
                 "username": settings.sender_label,
