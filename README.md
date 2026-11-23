@@ -29,7 +29,7 @@ Windowsではタスクトレイ、macOSではメニューバーに常駐しま�
 ./codex-goal-monitor
 ```
 
-Codex CLIのローカル共有app-serverに接続します。`--no-daemon`や独自の`--remote`接続は監視対象外です。WSLではLinux版を使用してください。`CODEX_HOME`を変更している場合は、Codex CLIと本アプリに同じ絶対パスを指定します。
+Codex CLIのローカル共有app-serverに接続します。`--no-daemon`や独自の`--remote`接続、および別プロセスのapp-serverを起動するT3 Codeとは競合せず、それらのスレッドは監視対象外です。WSLではLinux版を使用してください。`CODEX_HOME`を変更している場合は、Codex CLIと本アプリに同じ絶対パスを指定します。
 
 ## 設定
 
