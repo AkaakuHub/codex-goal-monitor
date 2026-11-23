@@ -45,6 +45,27 @@ impl Turn {
             return false;
         };
         let info = &error["codexErrorInfo"];
+        let categories = info.as_object();
+        if [
+            "usageLimitExceeded",
+            "unauthorized",
+            "contextWindowExceeded",
+        ]
+        .into_iter()
+        .any(|category| {
+            info.as_str() == Some(category)
+                || categories.is_some_and(|categories| categories.contains_key(category))
+        }) {
+            return false;
+        }
+        if let Some(status) = categories.and_then(|categories| {
+            categories
+                .values()
+                .filter_map(|value| value["httpStatusCode"].as_u64())
+                .find(|status| (400..600).contains(status))
+        }) {
+            return retryable_http_status(status);
+        }
         if matches!(
             info.as_str(),
             Some(
@@ -56,23 +77,42 @@ impl Turn {
         ) {
             return true;
         }
-        if info.as_object().is_some_and(|info| {
-            info.iter().any(|(key, value)| {
+        if categories.is_some_and(|categories| {
+            categories.keys().any(|key| {
                 matches!(
                     key.as_str(),
                     "responseStreamDisconnected" | "responseStreamConnectionFailed"
-                ) || value["httpStatusCode"] == 429
+                )
             })
         }) {
             return true;
         }
         error["message"].as_str().is_some_and(|message| {
-            message.starts_with("stream disconnected before completion:")
-                || message.starts_with(
-                    "Error running remote compact task: stream disconnected before completion:",
-                )
+            let compact_error = message
+                .strip_prefix("Error running remote compact task:")
+                .map(str::trim_start);
+            if compact_error
+                .unwrap_or(message)
+                .starts_with("stream disconnected before completion:")
+            {
+                return true;
+            }
+            compact_error.is_some_and(|error| {
+                let mut words = error.split_whitespace();
+                match (words.next(), words.next(), words.next()) {
+                    (Some("unexpected"), Some("status"), Some(status)) => status
+                        .trim_end_matches(':')
+                        .parse()
+                        .is_ok_and(retryable_http_status),
+                    _ => false,
+                }
+            })
         })
     }
+}
+
+fn retryable_http_status(status: u64) -> bool {
+    matches!(status, 429 | 500 | 502 | 503 | 504)
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]

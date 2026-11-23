@@ -19,27 +19,54 @@ fn failed(id: &str) -> Turn {
 }
 
 #[test]
-fn only_capacity_and_stream_errors_are_retryable() {
+fn retryable_error_info_includes_transient_http_statuses() {
     for info in [
         json!("serverOverloaded"),
         json!("rateLimitExceeded"),
-        json!({"httpConnectionFailed": {"httpStatusCode": 429}}),
+        json!({"responseStreamConnectionFailed": {"httpStatusCode": null}}),
+        json!({"responseStreamDisconnected": {"httpStatusCode": 200}}),
         json!({"responseStreamDisconnected": {"httpStatusCode": 500}}),
     ] {
         let mut turn = failed("error");
         turn.error = Some(json!({"message": "", "codexErrorInfo": info}));
         assert!(turn.retryable(Some(&goal()), 110));
     }
+    for status in [429, 500, 502, 503, 504] {
+        let mut turn = failed("error");
+        turn.error = Some(json!({"codexErrorInfo": {
+            "httpConnectionFailed": {"httpStatusCode": status}
+        }}));
+        assert!(turn.retryable(Some(&goal()), 110), "HTTP {status}");
+    }
+}
+
+#[test]
+fn permanent_error_info_prevents_retries() {
+    let mut turn = failed("error");
+    let message = "Error running remote compact task: stream disconnected before completion: connection reset";
     for info in [
-        "other",
         "usageLimitExceeded",
         "unauthorized",
         "contextWindowExceeded",
     ] {
-        let mut turn = failed("error");
-        turn.error = Some(json!({"codexErrorInfo": info}));
+        turn.error = Some(json!({"message": message, "codexErrorInfo": info}));
+        assert!(!turn.retryable(Some(&goal()), 110));
+        turn.error = Some(json!({
+            "message": message,
+            "codexErrorInfo": {(info): {"httpStatusCode": 503}}
+        }));
         assert!(!turn.retryable(Some(&goal()), 110));
     }
+    for status in [400, 401, 403, 404, 501] {
+        turn.error = Some(json!({"message": message, "codexErrorInfo": {
+            "responseStreamDisconnected": {"httpStatusCode": status}
+        }}));
+        assert!(!turn.retryable(Some(&goal()), 110), "HTTP {status}");
+    }
+}
+
+#[test]
+fn only_failed_turns_are_retryable() {
     for status in ["inProgress", "interrupted", "completed"] {
         let mut turn = failed("error");
         turn.status = status.into();
@@ -48,12 +75,36 @@ fn only_capacity_and_stream_errors_are_retryable() {
 }
 
 #[test]
-fn remote_compaction_stream_error_is_retryable() {
+fn transient_remote_compaction_errors_are_retryable() {
     let mut turn = failed("error");
-    turn.error = Some(
-        json!({"message": "Error running remote compact task: stream disconnected before completion: connection reset"}),
-    );
-    assert!(turn.retryable(Some(&goal()), 110));
+    for message in [
+        "Error running remote compact task: stream disconnected before completion: Transport error: network error: error decoding response body",
+        "Error running remote compact task: unexpected status 503 Service Unavailable: upstream connect error or disconnect/reset before headers. reset reason: connection termination, url: https://chatgpt.com/backend-api/codex/responses, cf-ray: a5dale52ad64faf6-NRT",
+        "Error running remote compact task:\nstream disconnected before completion:\nconnection reset",
+        "Error running remote compact task: unexpected status 429 Too Many Requests",
+        "Error running remote compact task: unexpected status 500 Internal Server Error",
+        "Error running remote compact task: unexpected status 502 Bad Gateway",
+        "Error running remote compact task:\nunexpected status\n504 Gateway Timeout",
+    ] {
+        turn.error = Some(json!({"message": message}));
+        assert!(turn.retryable(Some(&goal()), 110), "{message}");
+    }
+}
+
+#[test]
+fn permanent_remote_compaction_errors_are_not_retryable() {
+    let mut turn = failed("error");
+    for message in [
+        "Error running remote compact task: unexpected status 400 Bad Request",
+        "Error running remote compact task: unexpected status 401 Unauthorized",
+        "Error running remote compact task: unexpected status 403 Forbidden",
+        "Error running remote compact task: unexpected status 404 Not Found",
+        "Error running remote compact task: unexpected status 501 Not Implemented",
+        "Error running remote compact task: unexpected status 5030",
+    ] {
+        turn.error = Some(json!({"message": message}));
+        assert!(!turn.retryable(Some(&goal()), 110), "{message}");
+    }
 }
 
 #[test]
